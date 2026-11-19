@@ -83,14 +83,24 @@ function dismiss() {
 
 <template>
   <section v-if="visible" class="install" aria-labelledby="install-title">
-    <h2 id="install-title" class="install-title">Aggiungi l’app alla schermata Home</h2>
+    <h2 id="install-title" class="install-title">
+      Aggiungi l’app alla schermata Home
+    </h2>
     <p class="install-intro">Così la trovi come una normale app, anche senza aprire il browser.</p>
-    <p class="install-platform">Dispositivo rilevato: <strong>{{ guide.title }}</strong></p>
-    <p v-if="guide.note" class="install-note">{{ guide.note }}</p>
+    <p class="install-platform">
+      Dispositivo rilevato: <strong>{{ guide.title }}</strong>
+    </p>
+    <p v-if="guide.note" class="install-note">
+      {{ guide.note }}
+    </p>
     <ol class="install-steps">
-      <li v-for="(step, i) in guide.steps" :key="i">{{ step }}</li>
+      <li v-for="(step, i) in guide.steps" :key="i">
+        {{ step }}
+      </li>
     </ol>
-    <button type="button" class="install-dismiss" @click="dismiss">Ho capito, non mostrare più</button>
+    <button type="button" class="install-dismiss" @click="dismiss">
+      Ho capito, non mostrare più
+    </button>
   </section>
 </template>
 
@@ -102,30 +112,35 @@ function dismiss() {
   background: linear-gradient(160deg, rgba(245, 158, 11, 0.16), rgba(255, 255, 255, 0.03));
   border: 1px solid rgba(245, 158, 11, 0.45);
 }
+
 .install-title {
   font-family: 'Caveat', cursive;
   font-size: clamp(2.2rem, 8vw, 2.8rem);
   font-weight: 700;
   color: var(--gold);
 }
+
 .install-intro,
 .install-platform,
 .install-note {
   margin: 0.5rem 0 0;
   color: #cbd5e1;
 }
+
 .install-note {
   padding: 0.6rem 0.8rem;
   border-radius: 10px;
   background: rgba(245, 158, 11, 0.12);
   color: var(--text);
 }
+
 .install-steps {
   margin: 0.75rem 0 0;
   padding-left: 1.4rem;
   display: grid;
   gap: 0.5rem;
 }
+
 .install-dismiss {
   margin-top: 1rem;
   min-height: var(--touch);

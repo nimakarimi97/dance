@@ -22,15 +22,18 @@ const saving = shallowRef(false)
 const error = shallowRef('')
 const submitted = shallowRef(false)
 const availableStyles = computed(() => dances[danza.value].stili)
-const dirty = computed(() =>
-  nome.value !== (props.figure?.nome || '')
-  || danza.value !== (props.figure?.danza || 'salsa')
-  || stili.value.join(',') !== (props.figure?.stili || []).join(',')
-  || youtubeId.value !== (props.figure?.youtubeId || '')
-  || Boolean(video.value || image.value),
+const dirty = computed(
+  () =>
+    nome.value !== (props.figure?.nome || '') ||
+    danza.value !== (props.figure?.danza || 'salsa') ||
+    stili.value.join(',') !== (props.figure?.stili || []).join(',') ||
+    youtubeId.value !== (props.figure?.youtubeId || '') ||
+    Boolean(video.value || image.value),
 )
 
-watch(danza, () => { stili.value = stili.value.filter(id => availableStyles.value.some(style => style.id === id)) })
+watch(danza, () => {
+  stili.value = stili.value.filter((id) => availableStyles.value.some((style) => style.id === id))
+})
 onMounted(() => dialog.value.showModal())
 onBeforeUnmount(() => dialog.value?.close())
 
@@ -59,7 +62,9 @@ async function submit() {
   }
   const parsedYoutubeId = parseYoutubeId(youtubeId.value)
   if (youtubeId.value.trim() && !parsedYoutubeId) {
-    await showError('Il link o l’ID YouTube non è valido. Incolla un ID di 11 caratteri oppure un link youtube.com o youtu.be.')
+    await showError(
+      'Il link o l’ID YouTube non è valido. Incolla un ID di 11 caratteri oppure un link youtube.com o youtu.be.',
+    )
     return
   }
   saving.value = true
@@ -78,8 +83,20 @@ async function submit() {
   }
 }
 
+function removeVideo() {
+  video.value = null
+  videoKey.value++
+}
+
+function removeImage() {
+  image.value = null
+  imageKey.value++
+}
+
 function fileSize(file) {
-  return file.size < 1_000_000 ? `${Math.max(1, Math.round(file.size / 1000))} KB` : `${(file.size / 1_000_000).toFixed(1)} MB`
+  return file.size < 1_000_000
+    ? `${Math.max(1, Math.round(file.size / 1000))} KB`
+    : `${(file.size / 1_000_000).toFixed(1)} MB`
 }
 </script>
 
@@ -97,8 +114,9 @@ function fileSize(file) {
         </button>
       </header>
       <div class="editor-body">
-        <p id="editor-description" class="editor-description">Definisci la figura, poi aggiungi un video o un’immagine.
-          Puoi completarla anche in un secondo momento.</p>
+        <p id="editor-description" class="editor-description">
+          Definisci la figura, poi aggiungi un video o un’immagine. Puoi completarla anche in un secondo momento.
+        </p>
         <fieldset :disabled="saving" class="editor-fields">
           <section class="details-section" aria-labelledby="details-title">
             <h3 id="details-title">
@@ -110,13 +128,17 @@ function fileSize(file) {
             </label>
             <label class="field">Danza
               <select v-model="danza" name="dance">
-                <option v-for="dance in dances" :key="dance.id" :value="dance.id">{{ dance.nome }}</option>
+                <option v-for="dance in dances" :key="dance.id" :value="dance.id">
+                  {{ dance.nome }}
+                </option>
               </select>
             </label>
             <fieldset class="style-choices"
               :aria-describedby="submitted && !stili.length ? 'styles-error' : 'styles-hint'">
               <legend>Stili</legend>
-              <p id="styles-hint" class="field-hint">Scegli almeno uno stile per questa figura.</p>
+              <p id="styles-hint" class="field-hint">
+                Scegli almeno uno stile per questa figura.
+              </p>
               <div class="style-options">
                 <label v-for="style in availableStyles" :key="style.id" class="style-option"
                   :class="{ checked: stili.includes(style.id) }">
@@ -124,11 +146,14 @@ function fileSize(file) {
                     :aria-invalid="submitted && !stili.length" /><span>{{ style.nome }}</span>
                 </label>
               </div>
-              <p v-if="submitted && !stili.length" id="styles-error" class="field-error">Seleziona almeno uno stile.</p>
+              <p v-if="submitted && !stili.length" id="styles-error" class="field-error">
+                Seleziona almeno uno stile.
+              </p>
             </fieldset>
             <div class="editor-privacy">
               <StudioIcon name="shield" />
-              <div><strong>Solo per chi è in pista con noi</strong>
+              <div>
+                <strong>Solo per chi è in pista con noi</strong>
                 <p>Figure, immagini e video Appwrite restano riservati agli utenti che hanno effettuato l’accesso.</p>
               </div>
             </div>
@@ -140,30 +165,34 @@ function fileSize(file) {
             </h3>
             <div class="upload-group">
               <label class="upload-tile" :class="{ chosen: video }">
-                <StudioIcon :name="video ? 'check' : 'upload'" /><strong>{{ video ? video.name : figure?.videoFileId ?
-                  'Sostituisci il video' : 'Carica un video' }}</strong>
+                <StudioIcon :name="video ? 'check' : 'upload'" /><strong>{{
+                  video ? video.name : figure?.videoFileId ? 'Sostituisci il video' : 'Carica un video'
+                  }}</strong>
                 <span>{{ video ? fileSize(video) : 'MP4, WebM o MOV · Fino a 50 MB' }}</span>
                 <input :key="videoKey" type="file" name="video" accept=".mp4,.webm,.mov"
                   :aria-label="figure?.videoFileId ? 'Sostituisci video' : 'Carica video'"
                   @change="video = $event.target.files[0] || null" />
               </label>
-              <button v-if="video" type="button" class="remove-file" @click="video = null; videoKey++">Rimuovi selezione
-                video</button>
+              <button v-if="video" type="button" class="remove-file" @click="removeVideo">
+                Rimuovi selezione video
+              </button>
               <p v-else-if="figure?.videoFileId" class="existing-file">
                 <StudioIcon name="check" /> Il video attuale resta collegato.
               </p>
             </div>
             <div class="upload-group">
               <label class="upload-tile image-tile" :class="{ chosen: image }">
-                <StudioIcon :name="image ? 'check' : 'image'" /><strong>{{ image ? image.name : figure?.imageFileId ?
-                  'Sostituisci l’immagine' : 'Aggiungi un’immagine' }}</strong>
+                <StudioIcon :name="image ? 'check' : 'image'" /><strong>{{
+                  image ? image.name : figure?.imageFileId ? 'Sostituisci l’immagine' : 'Aggiungi un’immagine'
+                  }}</strong>
                 <span>{{ image ? fileSize(image) : 'JPG, PNG o WebP · Fino a 50 MB' }}</span>
                 <input :key="imageKey" type="file" name="image" accept=".jpg,.jpeg,.png,.webp"
                   :aria-label="figure?.imageFileId ? 'Sostituisci immagine' : 'Carica immagine'"
                   @change="image = $event.target.files[0] || null" />
               </label>
-              <button v-if="image" type="button" class="remove-file" @click="image = null; imageKey++">Rimuovi selezione
-                immagine</button>
+              <button v-if="image" type="button" class="remove-file" @click="removeImage">
+                Rimuovi selezione immagine
+              </button>
               <p v-else-if="figure?.imageFileId" class="existing-file">
                 <StudioIcon name="check" /> L’immagine attuale resta collegata.
               </p>
@@ -173,12 +202,13 @@ function fileSize(file) {
                 placeholder="ID o link YouTube, es. https://youtube.com/shorts/…" autocomplete="off"
                 aria-describedby="youtube-hint" />
               <span id="youtube-hint" class="field-hint">Puoi incollare l’ID di 11 caratteri oppure il link (watch,
-                shorts, youtu.be). Se carichi un video, sarà mostrato al posto di YouTube.</span>
+                shorts, youtu.be). Se carichi un video, sarà
+                mostrato al posto di YouTube.</span>
             </label>
           </section>
         </fieldset>
-        <div v-if="error" ref="error-summary" class="editor-error" role="alert" tabindex="-1"><strong>Controlla la
-            figura</strong>
+        <div v-if="error" ref="error-summary" class="editor-error" role="alert" tabindex="-1">
+          <strong>Controlla la figura</strong>
           <p>{{ error }}</p>
         </div>
       </div>
@@ -186,8 +216,9 @@ function fileSize(file) {
         <span class="save-hint">
           <StudioIcon name="shield" /> Salvataggio protetto
         </span>
-        <button type="button" class="editor-button cancel-button" :disabled="saving"
-          @click="requestClose">Annulla</button>
+        <button type="button" class="editor-button cancel-button" :disabled="saving" @click="requestClose">
+          Annulla
+        </button>
         <button type="submit" class="editor-button save-button" :disabled="saving">
           <StudioIcon :name="saving ? 'upload' : 'check'" />{{ saving ? 'Salvataggio…' : 'Salva figura' }}
         </button>

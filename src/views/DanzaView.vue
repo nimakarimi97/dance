@@ -18,7 +18,11 @@ const searchText = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const hasFilters = computed(() => Boolean(activeStyle.value || searchText.value.trim()))
 
 function normalize(text) {
-  return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+  return text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .trim()
 }
 
 const filteredFigures = computed(() => {
@@ -36,7 +40,7 @@ const countLabel = computed(() => {
 })
 
 function styleName(id) {
-  return dance.value?.stili.find(style => style.id === id)?.nome
+  return dance.value?.stili.find((style) => style.id === id)?.nome
 }
 
 function updateQuery(patch) {
@@ -64,10 +68,13 @@ function resetFilters() {
 }
 
 // The same component instance is reused when switching dance, so resync the search box.
-watch(() => props.danza, () => {
-  clearTimeout(searchTimer)
-  searchText.value = typeof route.query.q === 'string' ? route.query.q : ''
-})
+watch(
+  () => props.danza,
+  () => {
+    clearTimeout(searchTimer)
+    searchText.value = typeof route.query.q === 'string' ? route.query.q : ''
+  },
+)
 
 const root = ref(null)
 let animationContext = null
@@ -86,16 +93,26 @@ onMounted(async () => {
   if (!canAnimate()) return
   animationContext = gsap.context(() => {
     gsap.from('.danza-header > *', { opacity: 0, y: 24, duration: 0.7, stagger: 0.1, ease: 'power3.out' })
-    gsap.from('.controls > *', { opacity: 0, y: 16, duration: 0.5, stagger: 0.08, delay: 0.25, clearProps: 'transform,opacity' })
+    gsap.from('.controls > *', {
+      opacity: 0,
+      y: 16,
+      duration: 0.5,
+      stagger: 0.08,
+      delay: 0.25,
+      clearProps: 'transform,opacity',
+    })
     animateGrid()
   }, root.value)
 })
 
 // Replay the entrance only when the visible set changes, not on every keystroke.
-watch(() => filteredFigures.value.map(figure => figure.id).join(), async () => {
-  await nextTick()
-  animateGrid()
-})
+watch(
+  () => filteredFigures.value.map((figure) => figure.id).join(),
+  async () => {
+    await nextTick()
+    animateGrid()
+  },
+)
 
 onBeforeUnmount(() => {
   clearTimeout(searchTimer)
@@ -114,38 +131,31 @@ onBeforeUnmount(() => {
       <div class="controls">
         <label class="search">
           <span class="visually-hidden">Cerca una figura</span>
-          <input
-            v-model="searchText"
-            type="search"
-            name="figura"
-            autocomplete="off"
-            enterkeyhint="search"
-            placeholder="Cerca, ad esempio Enchufla…"
-            @input="onSearch"
-          >
+          <input v-model="searchText" type="search" name="figura" autocomplete="off" enterkeyhint="search"
+            placeholder="Cerca, ad esempio Enchufla…" @input="onSearch" />
         </label>
 
         <div class="stili" role="group" aria-label="Filtra per stile">
-          <button
-            v-for="style in dance.stili"
-            :key="style.id"
-            type="button"
-            class="chip"
-            :class="{ active: activeStyle === style.id }"
-            :aria-pressed="activeStyle === style.id"
-            @click="selectStyle(style.id)"
-          >
+          <button v-for="style in dance.stili" :key="style.id" type="button" class="chip"
+            :class="{ active: activeStyle === style.id }" :aria-pressed="activeStyle === style.id"
+            @click="selectStyle(style.id)">
             {{ style.nome }}
           </button>
         </div>
       </div>
 
-      <p v-if="loading" class="count" role="status">Caricamento figure…</p>
+      <p v-if="loading" class="count" role="status">
+        Caricamento figure…
+      </p>
       <section v-else-if="error" class="state" role="alert">
         <p>{{ error }}</p>
-        <button type="button" class="btn" @click="retry">Riprova</button>
+        <button type="button" class="btn" @click="retry">
+          Riprova
+        </button>
       </section>
-      <p v-else class="count" role="status">{{ countLabel }}</p>
+      <p v-else class="count" role="status">
+        {{ countLabel }}
+      </p>
 
       <ul v-if="!loading && !error && filteredFigures.length" class="grid">
         <li v-for="figure in filteredFigures" :key="figure.id">
@@ -164,7 +174,9 @@ onBeforeUnmount(() => {
       <section v-else-if="!loading && !error" class="state">
         <h2 class="script">Nessuna figura trovata</h2>
         <p>Prova con un altro nome oppure togli i filtri per vedere tutte le figure di {{ dance.nome }}.</p>
-        <button v-if="hasFilters" type="button" class="btn btn-primary" @click="resetFilters">Mostra tutte le figure</button>
+        <button v-if="hasFilters" type="button" class="btn btn-primary" @click="resetFilters">
+          Mostra tutte le figure
+        </button>
       </section>
     </template>
 
@@ -177,9 +189,14 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.danza { padding: clamp(1.5rem, 5vw, 3rem) 0 1rem; }
+.danza {
+  padding: clamp(1.5rem, 5vw, 3rem) 0 1rem;
+}
 
-.danza-header { margin-bottom: 1.5rem; }
+.danza-header {
+  margin-bottom: 1.5rem;
+}
+
 .danza-title {
   font-size: clamp(4.5rem, 16vw, 7.5rem);
   font-weight: 700;
@@ -190,7 +207,13 @@ onBeforeUnmount(() => {
   background-clip: text;
   color: transparent;
 }
-.danza-desc { margin: 0.5rem 0 0; color: var(--muted); font-size: 1.1rem; max-width: 56ch; }
+
+.danza-desc {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 1.1rem;
+  max-width: 56ch;
+}
 
 .controls {
   position: sticky;
@@ -204,8 +227,17 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
-.stili { display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: none; }
-.stili .chip { flex: none; }
+
+.stili {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.stili .chip {
+  flex: none;
+}
 
 .search input {
   width: 100%;
@@ -217,10 +249,20 @@ onBeforeUnmount(() => {
   color: var(--text);
   font-size: 1rem;
 }
-.search input:focus { border-color: var(--accent-text); }
-.search input::placeholder { color: var(--muted); }
 
-.count { color: var(--muted); font-size: 0.95rem; margin: 1rem 0 0.75rem; }
+.search input:focus {
+  border-color: var(--accent-text);
+}
+
+.search input::placeholder {
+  color: var(--muted);
+}
+
+.count {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 1rem 0 0.75rem;
+}
 
 .grid {
   list-style: none;
@@ -242,10 +284,18 @@ onBeforeUnmount(() => {
   border-left: 6px solid var(--accent-text);
   text-decoration: none;
   background: var(--ink-2);
-  transition: background-color 0.2s, transform 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
 }
-.figura-card:hover { background: var(--ink-3); }
-.figura-card:active { transform: scale(0.98); }
+
+.figura-card:hover {
+  background: var(--ink-3);
+}
+
+.figura-card:active {
+  transform: scale(0.98);
+}
 
 .figura-nome {
   font-family: 'Caveat', cursive;
@@ -254,9 +304,23 @@ onBeforeUnmount(() => {
   line-height: 1;
   overflow-wrap: anywhere;
 }
-.figura-stili { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: auto; }
-.figura-stato { font-size: 0.95rem; color: var(--muted); }
-.figura-stato.ready { color: var(--gold); font-weight: 700; }
+
+.figura-stili {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+.figura-stato {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.figura-stato.ready {
+  color: var(--gold);
+  font-weight: 700;
+}
 
 @media (min-width: 760px) {
   .controls {

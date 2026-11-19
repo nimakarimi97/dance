@@ -30,6 +30,14 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.state { min-height: 60dvh; align-content: center; }
-.lead { margin: 0; font-size: 2.6rem; color: var(--text); }
+.state {
+  min-height: 60dvh;
+  align-content: center;
+}
+
+.lead {
+  margin: 0;
+  font-size: 2.6rem;
+  color: var(--text);
+}
 </style>

@@ -22,11 +22,16 @@ const paths = {
 </script>
 
 <template>
-  <svg class="studio-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <svg class="studio-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path :d="paths[name]" />
   </svg>
 </template>
 
 <style scoped>
-.studio-icon { width: 1.25rem; height: 1.25rem; flex: 0 0 auto; }
+.studio-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+}
 </style>

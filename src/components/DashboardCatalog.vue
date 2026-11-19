@@ -11,18 +11,34 @@ const props = defineProps({
   error: { type: String, default: '' },
   admin: Boolean,
 })
+
 defineEmits(['edit', 'create', 'retry'])
+
 const videoFilter = defineModel('videoFilter', { type: String, default: 'all' })
 const search = shallowRef('')
 const danceFilter = shallowRef('')
-const visibleFigures = computed(() => filterCatalog(props.figures, {
-  search: search.value, dance: danceFilter.value, video: videoFilter.value,
-}))
+const visibleFigures = computed(() =>
+  filterCatalog(props.figures, {
+    search: search.value,
+    dance: danceFilter.value,
+    video: videoFilter.value,
+  }),
+)
+
 const hasFilters = computed(() => Boolean(search.value || danceFilter.value || videoFilter.value !== 'all'))
+const resultLabel = computed(() => {
+  if (props.loading) return 'Caricamento…'
+  if (props.error) return 'Catalogo non disponibile'
+  const count = visibleFigures.value.length
+  return `${count} ${count === 1 ? 'figura' : 'figure'}`
+})
 const formatDate = new Intl.DateTimeFormat('it', { day: 'numeric', month: 'short' })
 
 function styleNames(figure) {
-  return figure.stili.map(id => dances[figure.danza]?.stili.find(style => style.id === id)?.nome).filter(Boolean).join(', ')
+  return figure.stili
+    .map((id) => dances[figure.danza]?.stili.find((style) => style.id === id)?.nome)
+    .filter(Boolean)
+    .join(', ')
 }
 
 function resetFilters() {
@@ -37,8 +53,10 @@ function resetFilters() {
     <header class="catalog-heading">
       <div>
         <h2 id="catalog-title">Catalogo figure</h2>
-        <p>{{ admin ? 'Tutte le figure, i video e i prossimi contenuti da completare.' : 'Il tuo repertorio di salsa e
-        bachata, in un solo posto.' }}</p>
+        <p>
+          <template v-if="admin">Tutte le figure, i video e i prossimi contenuti da completare.</template>
+          <template v-else>Il tuo repertorio di salsa e bachata, in un solo posto.</template>
+        </p>
       </div>
       <button v-if="admin" type="button" class="catalog-add" @click="$emit('create')">
         <StudioIcon name="plus" /> Nuova figura
@@ -62,13 +80,16 @@ function resetFilters() {
     </div>
     <div class="catalog-meta">
       <div class="dance-filters" role="group" aria-label="Filtra catalogo per danza">
-        <button type="button" :aria-pressed="danceFilter === ''" @click="danceFilter = ''">Tutte</button>
+        <button type="button" :aria-pressed="danceFilter === ''" @click="danceFilter = ''">
+          Tutte
+        </button>
         <button v-for="dance in dances" :key="dance.id" type="button" :aria-pressed="danceFilter === dance.id"
-          @click="danceFilter = dance.id">{{ dance.nome }}</button>
+          @click="danceFilter = dance.id">
+          {{ dance.nome }}
+        </button>
       </div>
       <p class="result-count" role="status" aria-atomic="true">
-        {{ loading ? 'Caricamento…' : error ? 'Catalogo non disponibile' : `${visibleFigures.length}
-        ${visibleFigures.length === 1 ? 'figura' : 'figure'}` }}
+        {{ resultLabel }}
       </p>
     </div>
 
@@ -79,16 +100,24 @@ function resetFilters() {
       <StudioIcon name="library" />
       <h3>Il catalogo non è disponibile</h3>
       <p>{{ error }}</p>
-      <button type="button" class="catalog-add" @click="$emit('retry')">Riprova</button>
+      <button type="button" class="catalog-add" @click="$emit('retry')">
+        Riprova
+      </button>
     </div>
     <table v-else-if="visibleFigures.length" class="figure-table">
-      <caption class="visually-hidden">Figure del catalogo, disponibilità dei video e azioni</caption>
+      <caption class="visually-hidden">
+        Figure del catalogo, disponibilità dei video e azioni
+      </caption>
       <thead>
         <tr>
           <th scope="col">Figura</th>
-          <th scope="col" class="dance-column">Danza</th>
+          <th scope="col" class="dance-column">
+            Danza
+          </th>
           <th scope="col">Video</th>
-          <th scope="col" class="date-column">Aggiornata</th>
+          <th scope="col" class="date-column">
+            Aggiornata
+          </th>
           <th scope="col"><span class="visually-hidden">Azioni</span></th>
         </tr>
       </thead>
@@ -100,22 +129,25 @@ function resetFilters() {
                 : 'B' }}</span>
               <div class="figure-label">
                 <RouterLink :to="{ name: 'figura', params: { figura: figure.id } }" class="figure-name">{{ figure.nome
-                  }}</RouterLink>
+                }}</RouterLink>
                 <span class="figure-styles"><span class="mobile-dance">{{ dances[figure.danza]?.nome }} · </span>{{
                   styleNames(figure) }}</span>
               </div>
             </div>
           </td>
-          <td class="dance-column"><span class="dance-tag" :data-dance="figure.danza">{{ dances[figure.danza]?.nome
-              }}</span></td>
+          <td class="dance-column">
+            <span class="dance-tag" :data-dance="figure.danza">{{ dances[figure.danza]?.nome }}</span>
+          </td>
           <td>
             <span class="video-status" :class="{ ready: figure.videoFileId || figure.youtubeId }">
               <StudioIcon :name="figure.videoFileId || figure.youtubeId ? 'video' : 'clock'" />
               <span>{{ figure.videoFileId ? 'Appwrite' : figure.youtubeId ? 'YouTube' : 'Da aggiungere' }}</span>
             </span>
           </td>
-          <td class="date-column"><time v-if="figure.$updatedAt" :datetime="figure.$updatedAt">{{ formatDate.format(new
-            Date(figure.$updatedAt)) }}</time><span v-else>—</span></td>
+          <td class="date-column">
+            <time v-if="figure.$updatedAt" :datetime="figure.$updatedAt">{{ formatDate.format(new
+              Date(figure.$updatedAt)) }}</time><span v-else>—</span>
+          </td>
           <td class="action-cell">
             <button v-if="admin" type="button" class="row-action" :aria-label="`Modifica ${figure.nome}`"
               @click="$emit('edit', figure)">
@@ -132,10 +164,17 @@ function resetFilters() {
     <div v-else class="catalog-state">
       <StudioIcon :name="hasFilters ? 'search' : 'library'" />
       <h3>{{ hasFilters ? 'Nessuna figura corrisponde' : 'Il catalogo comincia qui' }}</h3>
-      <p>{{ hasFilters ? 'Prova un altro nome o rimuovi i filtri.' : admin ? 'Aggiungi la prima figura e collega un
-        video quando è pronto.' : 'Le figure saranno disponibili appena aggiunte al catalogo.' }}</p>
-      <button v-if="hasFilters" type="button" class="catalog-add" @click="resetFilters">Rimuovi i filtri</button>
-      <button v-else-if="admin" type="button" class="catalog-add" @click="$emit('create')">Aggiungi una figura</button>
+      <p>
+        <template v-if="hasFilters">Prova un altro nome o rimuovi i filtri.</template>
+        <template v-else-if="admin">Aggiungi la prima figura e collega un video quando è pronto.</template>
+        <template v-else>Le figure saranno disponibili appena aggiunte al catalogo.</template>
+      </p>
+      <button v-if="hasFilters" type="button" class="catalog-add" @click="resetFilters">
+        Rimuovi i filtri
+      </button>
+      <button v-else-if="admin" type="button" class="catalog-add" @click="$emit('create')">
+        Aggiungi una figura
+      </button>
     </div>
     <footer class="catalog-footer">
       <StudioIcon name="shield" /><span>Figure e media visibili solo agli utenti che hanno effettuato l'accesso.</span>

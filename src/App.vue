@@ -22,7 +22,16 @@ onMounted(() => {
   if (!canAnimate()) return
   blobContext = gsap.context(() => {
     gsap.utils.toArray('.blob').forEach((blob, i) => {
-      gsap.to(blob, { x: '6vw', y: '4vh', scale: 1.15, duration: 14 + i * 4, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: -i * 5 })
+      gsap.to(blob, {
+        x: '6vw',
+        y: '4vh',
+        scale: 1.15,
+        duration: 14 + i * 4,
+        ease: 'sine.inOut',
+        yoyo: true,
+        repeat: -1,
+        delay: -i * 5,
+      })
     })
   }, blobs.value)
 })
@@ -44,9 +53,13 @@ const pageTitle = computed(() => {
   return ''
 })
 
-watch(pageTitle, title => {
-  document.title = title ? `${title} · ${baseTitle}` : baseTitle
-}, { immediate: true })
+watch(
+  pageTitle,
+  (title) => {
+    document.title = title ? `${title} · ${baseTitle}` : baseTitle
+  },
+  { immediate: true },
+)
 
 function focusMain() {
   const main = document.querySelector('main')
@@ -75,7 +88,9 @@ function focusMain() {
     <p v-if="!isOnline" class="offline" role="status">
       Sei offline. Per accedere alle figure e ai video serve una connessione.
     </p>
-    <p v-if="authError && route.name !== 'auth'" class="offline" role="alert">{{ authError }}</p>
+    <p v-if="authError && route.name !== 'auth'" class="offline" role="alert">
+      {{ authError }}
+    </p>
 
     <RouterView v-slot="{ Component }">
       <Transition name="page" mode="out-in">
@@ -333,7 +348,9 @@ function focusMain() {
 
 .page-enter-active,
 .page-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
 .page-enter-from {
