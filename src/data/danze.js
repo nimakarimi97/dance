@@ -2,26 +2,26 @@ import bachata from './bachata.json'
 import salsa from './salsa.json'
 
 /**
- * Dati dell'app: ogni danza ha il suo file JSON (salsa.json, bachata.json).
- * Per aggiungere un video, imposta youtubeId con l'ID del video YouTube
- * (es. youtube.com/watch?v=ABC123xyz -> "ABC123xyz") al posto di null.
+ * App data: each dance has its own JSON file (salsa.json, bachata.json).
+ * To add a video, set youtubeId to the YouTube video ID
+ * (e.g. youtube.com/watch?v=ABC123xyz -> "ABC123xyz") instead of null.
  */
-const danzeJson = [salsa, bachata]
+const danceData = [salsa, bachata]
 
-export const danze = Object.fromEntries(
-  danzeJson.map(({ id, nome, descrizione, stili }) => [id, { id, nome, descrizione, stili }]),
+export const dances = Object.fromEntries(
+  danceData.map(({ id, nome, descrizione, stili }) => [id, { id, nome, descrizione, stili }]),
 )
 
-export const figure = danzeJson.flatMap(({ id, figure }) => figure.map(f => ({ ...f, danza: id })))
+export const figures = danceData.flatMap(({ id, figure }) => figure.map(figure => ({ ...figure, danza: id })))
 
-export function trovaDanza(id) {
-  return danze[id] ?? null
+export function findDance(id) {
+  return dances[id] ?? null
 }
 
-export function figurePerDanza(idDanza) {
-  return figure.filter(f => f.danza === idDanza)
+export function getFiguresForDance(danceId) {
+  return figures.filter(figure => figure.danza === danceId)
 }
 
-export function trovaFigura(id) {
-  return figure.find(f => f.id === id) ?? null
+export function findFigure(id) {
+  return figures.find(figure => figure.id === id) ?? null
 }

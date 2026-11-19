@@ -2,17 +2,17 @@
 import { gsap } from 'gsap'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { danze, figurePerDanza } from '../data/danze.js'
+import { dances, getFiguresForDance } from '../data/danze.js'
 
 const root = ref(null)
-let ctx = null
+let animationContext = null
 
-const titolo = 'Salsa & Bachata'
-const cards = Object.values(danze)
+const title = 'Salsa & Bachata'
+const cards = Object.values(dances)
 
 onMounted(async () => {
   await nextTick()
-  ctx = gsap.context(() => {
+  animationContext = gsap.context(() => {
     gsap.from('.hero-letter', {
       yPercent: 110,
       rotate: 8,
@@ -35,18 +35,18 @@ onMounted(async () => {
   }, root.value)
 })
 
-onBeforeUnmount(() => ctx?.revert())
+onBeforeUnmount(() => animationContext?.revert())
 
-function tilt(e) {
-  const el = e.currentTarget
-  const r = el.getBoundingClientRect()
-  const x = (e.clientX - r.left) / r.width - 0.5
-  const y = (e.clientY - r.top) / r.height - 0.5
-  gsap.to(el, { rotateY: x * 12, rotateX: -y * 12, duration: 0.4, ease: 'power2.out', transformPerspective: 900 })
+function tilt(event) {
+  const element = event.currentTarget
+  const bounds = element.getBoundingClientRect()
+  const x = (event.clientX - bounds.left) / bounds.width - 0.5
+  const y = (event.clientY - bounds.top) / bounds.height - 0.5
+  gsap.to(element, { rotateY: x * 12, rotateX: -y * 12, duration: 0.4, ease: 'power2.out', transformPerspective: 900 })
 }
 
-function resetTilt(e) {
-  gsap.to(e.currentTarget, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'elastic.out(1, 0.5)' })
+function resetTilt(event) {
+  gsap.to(event.currentTarget, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'elastic.out(1, 0.5)' })
 }
 </script>
 
@@ -56,30 +56,30 @@ function resetTilt(e) {
       <p class="hero-sub script float">Benvenuto in pista 💃🕺</p>
       <h1 class="hero-title" aria-label="Salsa & Bachata">
         <span
-          v-for="(lettera, i) in titolo.split('')"
+          v-for="(letter, i) in title.split('')"
           :key="i"
           class="hero-letter"
-          :class="{ 'hero-letter-space': lettera === ' ' }"
-        >{{ lettera === ' ' ? '\u00A0' : lettera }}</span>
+          :class="{ 'hero-letter-space': letter === ' ' }"
+        >{{ letter === ' ' ? '\u00A0' : letter }}</span>
       </h1>
       <p class="hero-sub">Scegli una danza e sfoglia le figure, divise per stile.</p>
     </section>
 
     <nav class="cards" aria-label="Danze">
       <RouterLink
-        v-for="danza in cards"
-        :key="danza.id"
-        :to="{ name: 'danza', params: { danza: danza.id } }"
+        v-for="dance in cards"
+        :key="dance.id"
+        :to="{ name: 'danza', params: { danza: dance.id } }"
         class="dance-card"
-        :class="`dance-card-${danza.id}`"
+        :class="`dance-card-${dance.id}`"
         @pointermove="tilt"
         @pointerleave="resetTilt"
       >
-        <span class="card-count">{{ figurePerDanza(danza.id).length }} figure</span>
-        <h2 class="card-title">{{ danza.nome }}</h2>
-        <p class="card-desc">{{ danza.descrizione }}</p>
+        <span class="card-count">{{ getFiguresForDance(dance.id).length }} figure</span>
+        <h2 class="card-title">{{ dance.nome }}</h2>
+        <p class="card-desc">{{ dance.descrizione }}</p>
         <span class="card-stili">
-          <span v-for="stile in danza.stili" :key="stile.id" class="chip">{{ stile.nome }}</span>
+          <span v-for="style in dance.stili" :key="style.id" class="chip">{{ style.nome }}</span>
         </span>
         <span class="card-cta script">Apri →</span>
       </RouterLink>

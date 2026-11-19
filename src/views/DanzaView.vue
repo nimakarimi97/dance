@@ -2,32 +2,32 @@
 import { gsap } from 'gsap'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { figurePerDanza, trovaDanza } from '../data/danze.js'
+import { findDance, getFiguresForDance } from '../data/danze.js'
 
 const props = defineProps({ danza: { type: String, required: true } })
 const route = useRoute()
 const router = useRouter()
 
-const danza = computed(() => trovaDanza(props.danza))
-const figureDanza = computed(() => figurePerDanza(props.danza))
+const dance = computed(() => findDance(props.danza))
+const danceFigures = computed(() => getFiguresForDance(props.danza))
 
-const stileAttivo = computed(() => (typeof route.query.stile === 'string' ? route.query.stile : ''))
-const testoRicerca = ref(typeof route.query.q === 'string' ? route.query.q : '')
+const activeStyle = computed(() => (typeof route.query.stile === 'string' ? route.query.stile : ''))
+const searchText = ref(typeof route.query.q === 'string' ? route.query.q : '')
 
-function normalizza(s) {
-  return s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+function normalize(text) {
+  return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
 }
 
-const figureFiltrate = computed(() => {
-  const q = normalizza(testoRicerca.value)
-  return figureDanza.value.filter((f) => {
-    const okStile = !stileAttivo.value || f.stili.includes(stileAttivo.value)
-    const okTesto = !q || normalizza(f.nome).includes(q)
-    return okStile && okTesto
+const filteredFigures = computed(() => {
+  const query = normalize(searchText.value)
+  return danceFigures.value.filter((figure) => {
+    const matchesStyle = !activeStyle.value || figure.stili.includes(activeStyle.value)
+    const matchesText = !query || normalize(figure.nome).includes(query)
+    return matchesStyle && matchesText
   })
 })
 
-function aggiornaQuery(patch) {
+function updateQuery(patch) {
   const query = { ...route.query, ...patch }
   Object.keys(query).forEach((k) => {
     if (!query[k]) delete query[k]
@@ -35,20 +35,20 @@ function aggiornaQuery(patch) {
   router.replace({ query })
 }
 
-function selezionaStile(id) {
-  aggiornaQuery({ stile: stileAttivo.value === id ? undefined : id })
+function selectStyle(id) {
+  updateQuery({ stile: activeStyle.value === id ? undefined : id })
 }
 
-let timerRicerca = null
-function onRicerca() {
-  clearTimeout(timerRicerca)
-  timerRicerca = setTimeout(() => aggiornaQuery({ q: testoRicerca.value.trim() || undefined }), 250)
+let searchTimer = null
+function onSearch() {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => updateQuery({ q: searchText.value.trim() || undefined }), 250)
 }
 
 const root = ref(null)
-let ctx = null
+let animationContext = null
 
-function animaGriglia() {
+function animateGrid() {
   gsap.fromTo(
     '.figura-card',
     { opacity: 0, y: 30, scale: 0.96 },
@@ -58,70 +58,70 @@ function animaGriglia() {
 
 onMounted(async () => {
   await nextTick()
-  ctx = gsap.context(() => {
+  animationContext = gsap.context(() => {
     gsap.from('.danza-header > *', { opacity: 0, y: 24, duration: 0.7, stagger: 0.1, ease: 'power3.out' })
     gsap.from('.stile-chip', { opacity: 0, x: -12, duration: 0.4, stagger: 0.06, delay: 0.3 })
-    animaGriglia()
+    animateGrid()
   }, root.value)
 })
 
-watch(figureFiltrate, async () => {
+watch(filteredFigures, async () => {
   await nextTick()
-  animaGriglia()
+  animateGrid()
 })
 
 onBeforeUnmount(() => {
-  clearTimeout(timerRicerca)
-  ctx?.revert()
+  clearTimeout(searchTimer)
+  animationContext?.revert()
 })
 </script>
 
 <template>
   <main ref="root" class="danza container">
-    <template v-if="danza">
+    <template v-if="dance">
       <header class="danza-header">
         <RouterLink to="/" class="back">← Tutte le danze</RouterLink>
-        <h1 class="danza-title script">{{ danza.nome }}</h1>
-        <p class="danza-desc">{{ danza.descrizione }}</p>
+        <h1 class="danza-title script">{{ dance.nome }}</h1>
+        <p class="danza-desc">{{ dance.descrizione }}</p>
       </header>
 
       <div class="controls">
         <div class="stili" role="group" aria-label="Filtra per stile">
           <button
-            v-for="stile in danza.stili"
-            :key="stile.id"
+            v-for="style in dance.stili"
+            :key="style.id"
             type="button"
             class="chip stile-chip"
-            :class="{ active: stileAttivo === stile.id }"
-            :aria-pressed="stileAttivo === stile.id"
-            @click="selezionaStile(stile.id)"
+            :class="{ active: activeStyle === style.id }"
+            :aria-pressed="activeStyle === style.id"
+            @click="selectStyle(style.id)"
           >
-            {{ stile.nome }}
+            {{ style.nome }}
           </button>
         </div>
 
         <label class="search">
           <span class="visually-hidden">Cerca figura</span>
           <input
-            v-model="testoRicerca"
+            v-model="searchText"
             type="search"
             placeholder="Cerca una figura…"
-            @input="onRicerca"
+            @input="onSearch"
           >
         </label>
       </div>
 
-      <p class="count">{{ figureFiltrate.length }} {{ figureFiltrate.length === 1 ? 'figura' : 'figure' }}</p>
+      <p class="count">{{ filteredFigures.length }} {{ filteredFigures.length === 1 ? 'figura' : 'figure' }}</p>
 
-      <ul v-if="figureFiltrate.length" class="grid">
-        <li v-for="figura in figureFiltrate" :key="figura.id">
-          <RouterLink :to="{ name: 'figura', params: { figura: figura.id } }" class="figura-card">
-            <span class="figura-nome">{{ figura.nome }}</span>
+      <ul v-if="filteredFigures.length" class="grid">
+        <li v-for="figure in filteredFigures" :key="figure.id">
+          <RouterLink :to="{ name: 'figura', params: { figura: figure.id } }" class="figura-card">
+            <span class="figura-nome">{{ figure.nome }}</span>
             <span class="figura-stili">
-              <span v-for="s in figura.stili" :key="s" class="mini-tag">{{ danza.stili.find(x => x.id === s)?.nome }}</span>
+              <span v-for="styleId in figure.stili" :key="styleId" class="mini-tag">{{ dance.stili.find(style => style.id === styleId)?.nome }}</span>
             </span>
             <span class="figura-stato">
-              {{ figura.youtubeId ? '▶ Guarda il video' : 'Video in arrivo' }}
+              {{ figure.youtubeId ? '▶ Guarda il video' : 'Video in arrivo' }}
             </span>
           </RouterLink>
         </li>

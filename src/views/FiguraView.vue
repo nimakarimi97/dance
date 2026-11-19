@@ -2,63 +2,63 @@
 import { gsap } from 'gsap'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { figurePerDanza, trovaDanza, trovaFigura } from '../data/danze.js'
+import { findDance, findFigure, getFiguresForDance } from '../data/danze.js'
 
 const props = defineProps({ figura: { type: String, required: true } })
 
-const figuraCorrente = computed(() => trovaFigura(props.figura))
-const danza = computed(() => (figuraCorrente.value ? trovaDanza(figuraCorrente.value.danza) : null))
-const stiliFigura = computed(() =>
-  figuraCorrente.value && danza.value
-    ? figuraCorrente.value.stili.map(id => danza.value.stili.find(s => s.id === id)).filter(Boolean)
+const currentFigure = computed(() => findFigure(props.figura))
+const dance = computed(() => (currentFigure.value ? findDance(currentFigure.value.danza) : null))
+const figureStyles = computed(() =>
+  currentFigure.value && dance.value
+    ? currentFigure.value.stili.map(styleId => dance.value.stili.find(style => style.id === styleId)).filter(Boolean)
     : [],
 )
 
-const altreFigure = computed(() => (figuraCorrente.value ? figurePerDanza(figuraCorrente.value.danza) : []))
-const indice = computed(() => altreFigure.value.findIndex(f => f.id === props.figura))
-const precedente = computed(() => (indice.value > 0 ? altreFigure.value[indice.value - 1] : null))
-const successiva = computed(() => (indice.value >= 0 && indice.value < altreFigure.value.length - 1 ? altreFigure.value[indice.value + 1] : null))
+const otherFigures = computed(() => (currentFigure.value ? getFiguresForDance(currentFigure.value.danza) : []))
+const currentIndex = computed(() => otherFigures.value.findIndex(figure => figure.id === props.figura))
+const previousFigure = computed(() => (currentIndex.value > 0 ? otherFigures.value[currentIndex.value - 1] : null))
+const nextFigure = computed(() => (currentIndex.value >= 0 && currentIndex.value < otherFigures.value.length - 1 ? otherFigures.value[currentIndex.value + 1] : null))
 
-const urlVideo = computed(() => {
-  const id = figuraCorrente.value?.youtubeId
-  return id ? `https://www.youtube-nocookie.com/embed/${id}?hl=it&cc_lang_pref=it&rel=0&modestbranding=1` : null
+const videoUrl = computed(() => {
+  const videoId = currentFigure.value?.youtubeId
+  return videoId ? `https://www.youtube-nocookie.com/embed/${videoId}?hl=it&cc_lang_pref=it&rel=0&modestbranding=1` : null
 })
 
 const root = ref(null)
-let ctx = null
+let animationContext = null
 
-function anima() {
+function animate() {
   gsap.fromTo('.player', { opacity: 0, y: 30, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'power3.out' })
   gsap.from('.fig-title > *', { opacity: 0, y: 20, duration: 0.6, stagger: 0.08, delay: 0.2 })
 }
 
 onMounted(async () => {
   await nextTick()
-  ctx = gsap.context(anima, root.value)
+  animationContext = gsap.context(animate, root.value)
 })
 
 watch(() => props.figura, async () => {
   await nextTick()
-  anima()
+  animate()
 })
 
-onBeforeUnmount(() => ctx?.revert())
+onBeforeUnmount(() => animationContext?.revert())
 </script>
 
 <template>
   <main ref="root" class="figura container">
-    <template v-if="figuraCorrente && danza">
+    <template v-if="currentFigure && dance">
       <nav class="crumbs" aria-label="Percorso">
         <RouterLink to="/" class="back">Home</RouterLink>
         <span>/</span>
-        <RouterLink :to="{ name: 'danza', params: { danza: danza.id } }" class="back">{{ danza.nome }}</RouterLink>
+        <RouterLink :to="{ name: 'danza', params: { danza: dance.id } }" class="back">{{ dance.nome }}</RouterLink>
       </nav>
 
-      <div class="player" :class="{ 'player-placeholder': !urlVideo }">
+      <div class="player" :class="{ 'player-placeholder': !videoUrl }">
         <iframe
-          v-if="urlVideo"
-          :src="urlVideo"
-          :title="`Video: ${figuraCorrente.nome}`"
+          v-if="videoUrl"
+          :src="videoUrl"
+          :title="`Video: ${currentFigure.nome}`"
           allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           referrerpolicy="strict-origin-when-cross-origin"
           allowfullscreen
@@ -70,20 +70,20 @@ onBeforeUnmount(() => ctx?.revert())
       </div>
 
       <header class="fig-title">
-        <h1 class="script">{{ figuraCorrente.nome }}</h1>
+        <h1 class="script">{{ currentFigure.nome }}</h1>
         <div class="tags">
-          <span class="chip active">{{ danza.nome }}</span>
-          <span v-for="s in stiliFigura" :key="s.id" class="chip">{{ s.nome }}</span>
+          <span class="chip active">{{ dance.nome }}</span>
+          <span v-for="style in figureStyles" :key="style.id" class="chip">{{ style.nome }}</span>
         </div>
       </header>
 
       <nav class="pager" aria-label="Figure precedenti e successive">
-        <RouterLink v-if="precedente" :to="{ name: 'figura', params: { figura: precedente.id } }" class="pager-link">
-          ← {{ precedente.nome }}
+        <RouterLink v-if="previousFigure" :to="{ name: 'figura', params: { figura: previousFigure.id } }" class="pager-link">
+          ← {{ previousFigure.nome }}
         </RouterLink>
         <span v-else />
-        <RouterLink v-if="successiva" :to="{ name: 'figura', params: { figura: successiva.id } }" class="pager-link next">
-          {{ successiva.nome }} →
+        <RouterLink v-if="nextFigure" :to="{ name: 'figura', params: { figura: nextFigure.id } }" class="pager-link next">
+          {{ nextFigure.nome }} →
         </RouterLink>
       </nav>
     </template>
