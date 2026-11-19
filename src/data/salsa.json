@@ -5,13 +5,5 @@
   "stili": [
     { "id": "cubana", "nome": "Cubana" },
     { "id": "portoricana", "nome": "Portoricana" }
-  ],
-  "figure": [
-    { "id": "salsa-70", "nome": "70", "stili": ["cubana", "portoricana"], "youtubeId": null },
-    { "id": "salsa-75", "nome": "75", "stili": ["cubana", "portoricana"], "youtubeId": null },
-    { "id": "salsa-77", "nome": "77", "stili": ["cubana"], "youtubeId": null },
-    { "id": "salsa-enchufla", "nome": "Enchufla", "stili": ["cubana", "portoricana"], "youtubeId": null },
-    { "id": "salsa-enchufla-mista", "nome": "Enchufla mista", "stili": ["portoricana"], "youtubeId": null },
-    { "id": "salsa-dile-que-no", "nome": "Dile que no", "stili": ["portoricana"], "youtubeId": null }
   ]
 }

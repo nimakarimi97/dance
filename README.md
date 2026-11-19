@@ -1,6 +1,6 @@
 # Salsa & Bachata · Figure
 
-PWA in Vue 3 + Vite per le figure di salsa e bachata, con video YouTube incorporati.
+PWA in Vue 3 + Vite per le figure di salsa e bachata, con accesso Appwrite e video riservati agli utenti autenticati.
 
 ## Sviluppo
 
@@ -9,19 +9,35 @@ pnpm install
 pnpm dev
 ```
 
-## Dati
+Verifica: `pnpm test` per i test di regressione, `pnpm build` per la build di produzione.
 
-Ogni danza ha il suo file in `src/data/`:
-- [salsa.json](src/data/salsa.json): nome, descrizione, stili e figure di salsa
-- [bachata.json](src/data/bachata.json): nome, descrizione, stili e figure di bachata
+## Appwrite e accesso
 
-[src/data/danze.js](src/data/danze.js) li importa e li espone all'app. Non serve modificarlo per aggiungere figure o stili.
+La configurazione pubblica predefinita punta al progetto `dance-salsa-bachata` nella regione `fra`. Per usare un altro progetto, copia [.env.example](.env.example) in `.env.local` e configura database, tabella e bucket. Non inserire mai API key nelle variabili `VITE_*`.
 
-## Aggiungere i video
+- Registrazione con nome, email, password e conferma password; accesso automatico dopo la registrazione.
+- Accesso email/password oppure Google, se il provider è configurato nel progetto.
+- Le pagine delle danze e delle figure richiedono una sessione valida. I dati non sono inclusi nel bundle pubblico né memorizzati nella cache della PWA.
+- Registra i domini del sito come piattaforme Web in Appwrite (`localhost` per lo sviluppo).
+- Se l'autenticazione è disattivata tramite feature flag, le pagine protette restano inaccessibili.
 
-1. Carica il video su YouTube (anche come "non in elenco").
-2. Copia l'ID dall'URL: `youtube.com/watch?v=ABC123xyz` → `ABC123xyz`.
-3. Nel JSON della danza sostituisci `"youtubeId": null` con `"youtubeId": "ABC123xyz"`.
+### Risorse e ruoli
+
+- Database TablesDB: `dance`; tabella: `figures`.
+- Colonne: `nome` (varchar 255, obbligatorio), `danza` (enum salsa/bachata, obbligatorio), `stili` (array varchar 64, obbligatorio), `youtubeId` (varchar 32), `videoFileId` e `imageFileId` (varchar 36).
+- Bucket: `figure-media`, massimo **50.000.000 byte per file**. Video: MP4/WebM/MOV; immagini: JPG/JPEG/PNG/WebP.
+- Tabella e bucket: lettura `users`, creazione/modifica/eliminazione `label:admin`; sicurezza per singola riga/file disattivata per mantenere una politica uniforme. Nessun accesso ospite.
+- Gli utenti registrati hanno il ruolo base Appwrite `users`. Solo tramite Console/MCP/server fidato è possibile assegnare la label `admin`; preferenze e form del browser non possono concedere privilegi.
+- L'autenticazione anonima è disattivata: serve registrarsi o accedere con un account.
+- I JSON in [src/data/](src/data/) contengono solo i metadati pubblici delle danze e degli stili. Le 11 figure iniziali sono state migrate in Appwrite.
+
+### Aggiungere figure, immagini e video
+
+Accedi con un account con label `admin`, apri **Profilo** e usa **Gestione figure e video**. Puoi creare una figura o selezionarne una esistente, scegliere gli stili e caricare video/immagine. In alternativa puoi inserire un ID YouTube di 11 caratteri.
+
+I video Appwrite hanno la precedenza su YouTube. I caricamenti falliti prima del salvataggio della riga vengono rimossi; sostituire un file mantiene quello precedente nel bucket, senza eliminazioni distruttive automatiche.
+
+I media privati vengono caricati con richieste SDK autenticate e visualizzati con URL Blob temporanei, revocati quando si lascia la pagina o si esce dall'account. Questo funziona anche con cookie di terze parti bloccati, ma richiede il download completo del file prima della riproduzione. Un video YouTube rimane soggetto alla visibilità impostata su YouTube: per media realmente privati usa il bucket Appwrite. I file MOV dipendono dai codec supportati dal browser; MP4/WebM sono preferibili.
 
 ## Deploy automatico (GitHub Actions)
 
@@ -35,4 +51,4 @@ Configurazione una tantum:
 DNS su Namecheap (Advanced DNS):
 - Tipo `CNAME Record`, Host `dance`, Valore `<tuo-utente>.github.io.`, TTL Automatic.
 
-Il routing usa l'hash (`/#/danza/salsa`), quindi non servono configurazioni extra su GitHub Pages.
+Il routing usa URL puliti (ad esempio `/danza/salsa`). Il file `public/404.html` ripristina le rotte dirette su GitHub Pages; includilo nel deploy insieme al sito.

@@ -1,18 +1,18 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ensureAuth, isLoggedIn } from '../lib/auth.js'
+import { authError, refreshUser, isLoggedIn } from '../lib/auth.js'
 
 const router = useRouter()
 const status = ref('in-progress')
 const error = ref('')
 
 onMounted(async () => {
-  await ensureAuth()
+  await refreshUser()
   if (isLoggedIn.value) return router.replace({ name: 'dashboard' })
 
   status.value = 'error'
-  error.value = 'Sessione Appwrite non disponibile dopo l’accesso. Riprova.'
+  error.value = authError.value || 'Sessione Appwrite non disponibile dopo l’accesso. Riprova.'
 })
 </script>
 

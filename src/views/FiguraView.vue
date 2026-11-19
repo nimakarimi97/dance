@@ -2,11 +2,13 @@
 import { gsap } from 'gsap'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { findDance, findFigure, getFiguresForDance } from '../data/danze.js'
+import { findDance, findFigure, getFiguresForDance, useFigureCatalog } from '../data/danze.js'
 import { isOnline } from '../lib/online.js'
 import { canAnimate } from '../lib/motion.js'
+import ProtectedMedia from '../components/ProtectedMedia.vue'
 
 const props = defineProps({ figura: { type: String, required: true } })
+const { loading, error, retry } = useFigureCatalog()
 
 const currentFigure = computed(() => findFigure(props.figura))
 const dance = computed(() => (currentFigure.value ? findDance(currentFigure.value.danza) : null))
@@ -34,10 +36,12 @@ const root = ref(null)
 let animationContext = null
 
 function animate() {
-  if (!canAnimate()) return
+  if (!canAnimate() || !root.value?.querySelector('.player')) return
   gsap.fromTo('.player', { opacity: 0, y: 30, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'power3.out', clearProps: 'transform,opacity' })
   gsap.from('.fig-title > *', { opacity: 0, y: 20, duration: 0.6, stagger: 0.08, delay: 0.2 })
-  gsap.from('.pager-link', { opacity: 0, y: 20, duration: 0.6, stagger: 0.1, delay: 0.5, clearProps: 'transform,opacity' })
+  if (root.value.querySelector('.pager-link')) {
+    gsap.from('.pager-link', { opacity: 0, y: 20, duration: 0.6, stagger: 0.1, delay: 0.5, clearProps: 'transform,opacity' })
+  }
 }
 
 onMounted(async () => {
@@ -45,9 +49,10 @@ onMounted(async () => {
   animationContext = gsap.context(animate, root.value)
 })
 
-watch(() => props.figura, async () => {
+watch(currentFigure, async figure => {
+  if (!figure) return
   await nextTick()
-  animate()
+  animationContext?.add(animate)
 })
 
 onBeforeUnmount(() => animationContext?.revert())
@@ -55,7 +60,12 @@ onBeforeUnmount(() => animationContext?.revert())
 
 <template>
   <main ref="root" class="figura container" :data-dance="currentFigure?.danza">
-    <template v-if="currentFigure && dance">
+    <p v-if="loading" class="state" role="status">Caricamento figura…</p>
+    <section v-else-if="error" class="state" role="alert">
+      <p>{{ error }}</p>
+      <button type="button" class="btn" @click="retry">Riprova</button>
+    </section>
+    <template v-else-if="currentFigure && dance">
       <nav class="crumbs" aria-label="Percorso">
         <RouterLink :to="{ name: 'danza', params: { danza: dance.id } }" class="back">
           <span aria-hidden="true">←</span> Tutte le figure di {{ dance.nome }}
@@ -70,8 +80,9 @@ onBeforeUnmount(() => animationContext?.revert())
         </div>
       </header>
 
-      <div class="player" :class="{ 'player-placeholder': !videoUrl }">
-        <template v-if="videoUrl">
+      <div class="player" :class="{ 'player-placeholder': !videoUrl && !currentFigure.videoFileId }">
+        <ProtectedMedia v-if="currentFigure.videoFileId" :file-id="currentFigure.videoFileId" kind="video" :title="`Video: ${currentFigure.nome}`" />
+        <template v-else-if="videoUrl">
           <div v-if="!videoLoaded" class="skeleton player-loading" role="status">
             <span class="visually-hidden">Caricamento del video…</span>
           </div>
@@ -94,10 +105,11 @@ onBeforeUnmount(() => animationContext?.revert())
       <p v-if="videoUrl && !isOnline" class="video-note" role="status">
         Sei offline: il video non si carica. Riprova quando torni online.
       </p>
-      <a v-else-if="youtubeLink" :href="youtubeLink" class="video-note yt" target="_blank" rel="noopener">
+      <a v-else-if="youtubeLink && !currentFigure.videoFileId" :href="youtubeLink" class="video-note yt" target="_blank" rel="noopener">
         Il video non parte? Aprilo su YouTube
       </a>
 
+      <ProtectedMedia v-if="currentFigure.imageFileId" :file-id="currentFigure.imageFileId" kind="image" :title="currentFigure.nome" />
       <nav class="pager" aria-label="Figure precedenti e successive">
         <RouterLink v-if="previousFigure" :to="{ name: 'figura', params: { figura: previousFigure.id } }" class="pager-link">
           <span class="pager-hint">Precedente</span>

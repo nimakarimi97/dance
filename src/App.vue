@@ -2,7 +2,7 @@
 import { gsap } from 'gsap'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { ensureAuth, isLoggedIn } from './lib/auth.js'
+import { authError, ensureAuth, isLoggedIn } from './lib/auth.js'
 import { isFeatureEnabled } from './config/features.js'
 import { dances, findDance, findFigure } from './data/danze.js'
 import { isOnline } from './lib/online.js'
@@ -72,12 +72,13 @@ function focusMain() {
     </header>
 
     <p v-if="!isOnline" class="offline" role="status">
-      Sei offline. Le figure restano consultabili, i video e l’account tornano con la connessione.
+      Sei offline. Per accedere alle figure e ai video serve una connessione.
     </p>
+    <p v-if="authError && route.name !== 'auth'" class="offline" role="alert">{{ authError }}</p>
 
     <RouterView v-slot="{ Component }">
       <Transition name="page" mode="out-in">
-        <component :is="Component" />
+        <component :is="Component" v-if="!route.meta.requiresAuth || isLoggedIn" />
       </Transition>
     </RouterView>
 

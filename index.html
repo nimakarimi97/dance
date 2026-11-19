@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Le figure di salsa e bachata, divise per stile, con video su YouTube." />
     <meta name="theme-color" content="#0f172a" />
+    <script>
+      if (window.location.search.startsWith('?/')) {
+        const route = window.location.search.slice(2).replace(/~and~/g, '&')
+        window.history.replaceState(null, '', `/${route}${window.location.hash}`)
+      } else if (window.location.hash.startsWith('#/')) {
+        window.history.replaceState(null, '', `/${window.location.hash.slice(2)}`)
+      }
+    </script>
     <link rel="icon" href="/pwa-192.png" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="mobile-web-app-capable" content="yes" />

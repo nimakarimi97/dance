@@ -3,7 +3,8 @@ import { gsap } from 'gsap'
 import { onMounted, ref } from 'vue'
 import { canAnimate } from '../lib/motion.js'
 import { useRouter } from 'vue-router'
-import { currentUser, isEditor, signOut } from '../lib/auth.js'
+import { currentUser, isAdmin, signOut } from '../lib/auth.js'
+import FigureEditor from '../components/FigureEditor.vue'
 
 const router = useRouter()
 const isSigningOut = ref(false)
@@ -46,18 +47,18 @@ async function signOutUser() {
           <dd>{{ currentUser?.email }}</dd>
           <dt>Ruolo</dt>
           <dd>
-            <span class="badge" :class="{ editor: isEditor }">{{ isEditor ? 'Editor' : 'Utente' }}</span>
+            <span class="badge" :class="{ editor: isAdmin }">{{ isAdmin ? 'Admin' : 'Utente' }}</span>
           </dd>
         </dl>
       </article>
 
-      <article class="card">
-        <h2>Gestione figure</h2>
-        <p v-if="isEditor" class="sub">Aggiungi figure e carica i video. Il pannello arriva nel prossimo step.</p>
-        <p v-else class="sub">Solo gli editor possono aggiungere figure e caricare video.</p>
+      <article v-if="!isAdmin" class="card">
+        <h2>Le tue figure</h2>
+        <p class="sub">Sfoglia salsa e bachata dal menu. Solo gli amministratori possono aggiungere figure e caricare video.</p>
       </article>
     </section>
 
+    <FigureEditor v-if="isAdmin" />
     <p v-if="signOutError" class="errore" role="alert">{{ signOutError }}</p>
     <button type="button" class="btn logout" :disabled="isSigningOut" @click="signOutUser">
       {{ isSigningOut ? 'Uscita…' : 'Esci' }}

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Salsa &amp; Bachata · Figure</title>
+  </head>
+  <body>
+    <script>
+      const route = window.location.pathname.slice(1) + window.location.search + window.location.hash
+      window.location.replace(`${window.location.origin}/?/${route.replace(/&/g, '~and~')}`)
+    </script>
+  </body>
+</html>

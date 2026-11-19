@@ -2,12 +2,13 @@
 import { gsap } from 'gsap'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { findDance, getFiguresForDance } from '../data/danze.js'
+import { findDance, getFiguresForDance, useFigureCatalog } from '../data/danze.js'
 import { canAnimate } from '../lib/motion.js'
 
 const props = defineProps({ danza: { type: String, required: true } })
 const route = useRoute()
 const router = useRouter()
+const { loading, error, retry } = useFigureCatalog()
 
 const dance = computed(() => findDance(props.danza))
 const danceFigures = computed(() => getFiguresForDance(props.danza))
@@ -72,7 +73,7 @@ const root = ref(null)
 let animationContext = null
 
 function animateGrid() {
-  if (!canAnimate()) return
+  if (!canAnimate() || !root.value?.querySelector('.figura-card')) return
   gsap.fromTo(
     '.figura-card',
     { opacity: 0, y: 30, scale: 0.96 },
@@ -139,23 +140,28 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <p class="count" role="status">{{ countLabel }}</p>
+      <p v-if="loading" class="count" role="status">Caricamento figure…</p>
+      <section v-else-if="error" class="state" role="alert">
+        <p>{{ error }}</p>
+        <button type="button" class="btn" @click="retry">Riprova</button>
+      </section>
+      <p v-else class="count" role="status">{{ countLabel }}</p>
 
-      <ul v-if="filteredFigures.length" class="grid">
+      <ul v-if="!loading && !error && filteredFigures.length" class="grid">
         <li v-for="figure in filteredFigures" :key="figure.id">
           <RouterLink :to="{ name: 'figura', params: { figura: figure.id } }" class="figura-card">
             <span class="figura-nome">{{ figure.nome }}</span>
             <span class="figura-stili">
               <span v-for="styleId in figure.stili" :key="styleId" class="tag">{{ styleName(styleId) }}</span>
             </span>
-            <span class="figura-stato" :class="{ ready: figure.youtubeId }">
-              {{ figure.youtubeId ? 'Guarda il video' : 'Video in arrivo' }}
+            <span class="figura-stato" :class="{ ready: figure.youtubeId || figure.videoFileId }">
+              {{ figure.youtubeId || figure.videoFileId ? 'Guarda il video' : 'Video in arrivo' }}
             </span>
           </RouterLink>
         </li>
       </ul>
 
-      <section v-else class="state">
+      <section v-else-if="!loading && !error" class="state">
         <h2 class="script">Nessuna figura trovata</h2>
         <p>Prova con un altro nome oppure togli i filtri per vedere tutte le figure di {{ dance.nome }}.</p>
         <button v-if="hasFilters" type="button" class="btn btn-primary" @click="resetFilters">Mostra tutte le figure</button>

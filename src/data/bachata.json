@@ -6,12 +6,5 @@
     { "id": "dominicana", "nome": "Dominicana" },
     { "id": "sensuale", "nome": "Sensuale" },
     { "id": "moderna", "nome": "Moderna" }
-  ],
-  "figure": [
-    { "id": "bachata-sombrero", "nome": "Sombrero", "stili": ["dominicana", "moderna"], "youtubeId": null },
-    { "id": "bachata-cucaracha", "nome": "Cucaracha", "stili": ["dominicana"], "youtubeId": null },
-    { "id": "bachata-enchufla", "nome": "Enchufla", "stili": ["dominicana", "sensuale"], "youtubeId": null },
-    { "id": "bachata-sensual-body-roll", "nome": "Body roll", "stili": ["sensuale"], "youtubeId": null },
-    { "id": "bachata-moderna-cruce", "nome": "Cruce moderno", "stili": ["moderna"], "youtubeId": null }
   ]
 }

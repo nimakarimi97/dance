@@ -1,9 +1,10 @@
 <script setup>
 import { gsap } from 'gsap'
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { dances, getFiguresForDance } from '../data/danze.js'
 import { canAnimate, hasHover } from '../lib/motion.js'
+import { isLoggedIn } from '../lib/auth.js'
 import InstallGuide from '../components/InstallGuide.vue'
 
 const root = ref(null)
@@ -11,10 +12,10 @@ let animationContext = null
 
 const title = 'Salsa & Bachata'
 
-const cards = Object.values(dances).map(dance => {
+const cards = computed(() => Object.values(dances).map(dance => {
   const figures = getFiguresForDance(dance.id)
-  return { ...dance, total: figures.length, videos: figures.filter(figure => figure.youtubeId).length }
-})
+  return { ...dance, total: figures.length, videos: figures.filter(figure => figure.youtubeId || figure.videoFileId).length }
+}))
 
 onMounted(async () => {
   await nextTick()
@@ -85,7 +86,8 @@ function release(event) {
         @pointercancel="release"
       >
         <span class="card-count">
-          {{ dance.total }} {{ dance.total === 1 ? 'figura' : 'figure' }}<template v-if="dance.videos">, {{ dance.videos }} con video</template>
+          <template v-if="isLoggedIn && dance.total">{{ dance.total }} {{ dance.total === 1 ? 'figura' : 'figure' }}<template v-if="dance.videos">, {{ dance.videos }} con video</template></template>
+          <template v-else>Figure e video riservati agli iscritti</template>
         </span>
         <h2 class="card-title">{{ dance.nome }}</h2>
         <p class="card-desc">{{ dance.descrizione }}</p>
