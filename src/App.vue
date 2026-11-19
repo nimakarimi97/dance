@@ -1,5 +1,12 @@
 <script setup>
+import { onMounted } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
+import { ensureAuth, isLoggedIn } from './lib/auth.js'
+import { isFeatureEnabled } from './config/features.js'
+
+onMounted(() => {
+  if (isFeatureEnabled('auth')) ensureAuth()
+})
 </script>
 
 <template>
@@ -14,6 +21,13 @@ import { RouterLink, RouterView } from 'vue-router'
       <RouterLink to="/" class="brand">
         <span class="brand-mark">♪</span>
         <span>Salsa &amp; Bachata</span>
+      </RouterLink>
+      <RouterLink
+        v-if="isFeatureEnabled('auth')"
+        :to="isLoggedIn ? { name: 'dashboard' } : { name: 'auth' }"
+        class="account"
+      >
+        {{ isLoggedIn ? 'Dashboard' : 'Accedi' }}
       </RouterLink>
     </header>
 
@@ -93,6 +107,22 @@ import { RouterLink, RouterView } from 'vue-router'
   background: linear-gradient(135deg, #e11d48, #2629e1);
   font-size: 1rem;
 }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.account {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.account:hover { background: rgba(255, 255, 255, 0.06); }
 
 .footer {
   margin-top: auto;
