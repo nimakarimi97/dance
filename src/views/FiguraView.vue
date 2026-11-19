@@ -3,6 +3,8 @@ import { gsap } from 'gsap'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { findDance, findFigure, getFiguresForDance, useFigureCatalog } from '../data/danze.js'
+import { currentUser } from '../lib/auth.js'
+import { recordFigureView } from '../lib/figures.js'
 import { isOnline } from '../lib/online.js'
 import { canAnimate } from '../lib/motion.js'
 import ProtectedMedia from '../components/ProtectedMedia.vue'
@@ -75,6 +77,16 @@ watch(currentFigure, async (figure) => {
   await nextTick()
   animationContext?.add(animate)
 })
+
+// Views are analytics only, so a failed write must never block the page.
+watch(
+  () => currentFigure.value?.id,
+  (figureId) => {
+    const userId = currentUser.value?.$id
+    if (figureId && userId) recordFigureView(figureId, userId).catch(() => {})
+  },
+  { immediate: true },
+)
 
 onBeforeUnmount(() => animationContext?.revert())
 </script>

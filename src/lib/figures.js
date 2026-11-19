@@ -19,6 +19,30 @@ export async function listFigures() {
   return rows.map(row => ({ ...row, id: row.$id }))
 }
 
+export async function recordFigureView(figureId, userId) {
+  await tablesDB.createRow({
+    databaseId: appwriteConfig.databaseId,
+    tableId: 'figure_views',
+    rowId: ID.unique(),
+    data: { figureId, userId },
+    permissions: [],
+  })
+}
+
+export async function listFigureViews() {
+  const views = []
+  let page
+  do {
+    page = await tablesDB.listRows({
+      databaseId: appwriteConfig.databaseId,
+      tableId: 'figure_views',
+      queries: [Query.limit(100), ...(views.length ? [Query.cursorAfter(views.at(-1).$id)] : [])],
+    })
+    views.push(...page.rows)
+  } while (page.rows.length === 100)
+  return views
+}
+
 export const MAX_MEDIA_SIZE = 50_000_000
 export const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov']
 export const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
@@ -31,7 +55,7 @@ function validateFile(file, extensions) {
   }
 }
 
-export async function saveFigure({ id, data, video, image }) {
+export async function saveFigure({ id, data, video, image, userId }) {
   validateFile(video, VIDEO_EXTENSIONS)
   validateFile(image, IMAGE_EXTENSIONS)
   const uploaded = []
@@ -46,7 +70,7 @@ export async function saveFigure({ id, data, video, image }) {
     }
     return id
       ? await tablesDB.updateRow({ ...table(), rowId: id, data })
-      : await tablesDB.createRow({ ...table(), rowId: ID.unique(), data, permissions: [] })
+      : await tablesDB.createRow({ ...table(), rowId: ID.unique(), data: { ...data, createdBy: userId }, permissions: [] })
   } catch (error) {
     const cleanup = await Promise.allSettled(uploaded.map(fileId =>
       storage.deleteFile({ bucketId: appwriteConfig.mediaBucketId, fileId }),

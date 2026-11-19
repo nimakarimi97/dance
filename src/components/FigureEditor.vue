@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { dances } from '../data/danze.js'
+import { currentUser } from '../lib/auth.js'
 import { saveFigure } from '../lib/figures.js'
 import { parseYoutubeId } from '../lib/youtube.js'
 import StudioIcon from './StudioIcon.vue'
@@ -74,6 +75,7 @@ async function submit() {
       data: { nome: nome.value.trim(), danza: danza.value, stili: [...stili.value], youtubeId: parsedYoutubeId },
       video: video.value,
       image: image.value,
+      userId: currentUser.value?.$id,
     })
     emit('saved', result.$id)
   } catch (cause) {
