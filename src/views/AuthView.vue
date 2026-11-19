@@ -30,7 +30,7 @@ async function submitAuth() {
     }
     router.replace(redirectDestination.value)
   } catch (e) {
-    error.value = e.message || 'Accesso non riuscito'
+    error.value = e.message || 'Accesso non riuscito. Controlla email e password e riprova.'
   } finally {
     isLoading.value = false
   }
@@ -41,7 +41,7 @@ async function handleGoogleSignIn() {
   try {
     await signInWithGoogle()
   } catch (e) {
-    error.value = e.message || 'Accesso con Google non riuscito'
+    error.value = e.message || 'Accesso con Google non riuscito. Riprova tra poco.'
   }
 }
 </script>
@@ -50,13 +50,13 @@ async function handleGoogleSignIn() {
   <main class="auth container">
     <section class="card">
       <h1 class="script">{{ isRegistration ? 'Crea account' : 'Accedi' }}</h1>
-      <p class="sub">Salva i tuoi preferiti e gestisci le figure.</p>
+      <p class="sub">Entra per gestire le figure e i tuoi dati.</p>
 
-      <button type="button" class="google" @click="handleGoogleSignIn">
+      <button type="button" class="btn google" @click="handleGoogleSignIn">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M15.7034 7.91133C14.7554 7.02509 13.4903 6.54228 12.1813 6.56212C9.78605 6.56212 7.75176 8.14611 7.02642 10.279V10.2791C6.64183 11.3968 6.64183 12.6071 7.02642 13.7249H7.02979C7.75849 15.8545 9.78941 17.4385 12.1847 17.4385C13.4211 17.4385 14.4826 17.1285 15.3053 16.5809V16.5787C16.2735 15.9504 16.9348 14.9616 17.1406 13.8439H12.1813V10.3783H20.8414C20.9494 10.9802 21 11.5952 21 12.207C21 14.9443 20.002 17.2586 18.2655 18.826L18.2673 18.8274C16.7458 20.203 14.6576 21 12.1813 21C8.70985 21 5.53527 19.082 3.97666 16.043V16.043C2.67445 13.5 2.67445 10.5039 3.97666 7.96096H3.97668L3.97666 7.96094C5.53527 4.9186 8.70985 3.00061 12.1813 3.00061C14.4619 2.97415 16.6649 3.8141 18.3247 5.34188L15.7034 7.91133Z" fill="#C4C6D7" />
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M15.7034 7.91133C14.7554 7.02509 13.4903 6.54228 12.1813 6.56212C9.78605 6.56212 7.75176 8.14611 7.02642 10.279V10.2791C6.64183 11.3968 6.64183 12.6071 7.02642 13.7249H7.02979C7.75849 15.8545 9.78941 17.4385 12.1847 17.4385C13.4211 17.4385 14.4826 17.1285 15.3053 16.5809V16.5787C16.2735 15.9504 16.9348 14.9616 17.1406 13.8439H12.1813V10.3783H20.8414C20.9494 10.9802 21 11.5952 21 12.207C21 14.9443 20.002 17.2586 18.2655 18.826L18.2673 18.8274C16.7458 20.203 14.6576 21 12.1813 21C8.70985 21 5.53527 19.082 3.97666 16.043V16.043C2.67445 13.5 2.67445 10.5039 3.97666 7.96096H3.97668L3.97666 7.96094C5.53527 4.9186 8.70985 3.00061 12.1813 3.00061C14.4619 2.97415 16.6649 3.8141 18.3247 5.34188L15.7034 7.91133Z" fill="currentColor" />
         </svg>
-        Sign in with Google
+        Continua con Google
       </button>
 
       <div class="divider"><span>oppure</span></div>
@@ -64,17 +64,18 @@ async function handleGoogleSignIn() {
       <form class="form" @submit.prevent="submitAuth">
         <label v-if="isRegistration">
           Nome
-          <input v-model="name" type="text" autocomplete="name" required />
+          <input v-model="name" type="text" name="name" autocomplete="name" required />
         </label>
         <label>
           Email
-          <input v-model="email" type="email" autocomplete="email" required />
+          <input v-model="email" type="email" name="email" autocomplete="email" inputmode="email" autocapitalize="none" :spellcheck="false" required />
         </label>
         <label>
           Password
           <input
             v-model="password"
             type="password"
+            name="password"
             :autocomplete="isRegistration ? 'new-password' : 'current-password'"
             minlength="8"
             required
@@ -82,9 +83,10 @@ async function handleGoogleSignIn() {
         </label>
 
         <p v-if="error" class="errore" role="alert">{{ error }}</p>
+        <p v-if="isRegistration" class="hint">La password deve avere almeno 8 caratteri.</p>
 
-        <button type="submit" class="submit" :disabled="isLoading">
-          {{ isLoading ? 'Attendere…' : isRegistration ? 'Registrati' : 'Accedi' }}
+        <button type="submit" class="btn btn-primary submit" :disabled="isLoading">
+          {{ isLoading ? (isRegistration ? 'Registrazione…' : 'Accesso…') : isRegistration ? 'Crea account' : 'Accedi' }}
         </button>
       </form>
 
@@ -100,117 +102,74 @@ async function handleGoogleSignIn() {
   display: grid;
   place-items: center;
   min-height: 70dvh;
-  padding: 2rem 1rem;
+  padding: 1.5rem 0;
 }
 
 .card {
-  width: min(100%, 420px);
-  padding: 2.25rem;
-  border-radius: 24px;
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(14px);
   animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  width: min(100%, 440px);
+  padding: clamp(1.25rem, 5vw, 2.25rem);
+  border-radius: 28px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
 }
 
-h1 {
-  margin: 0;
-  font-size: 2.6rem;
-  color: #f8fafc;
-}
-
-.sub {
-  margin: 0.25rem 0 1.5rem;
-  color: #94a3b8;
-}
-
-.google {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #1e293b;
-  color: #f8fafc;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
-}
-.google:hover { transform: translateY(-2px); background: #273449; }
+h1 { font-size: 3.2rem; line-height: 1; }
+.sub { margin: 0.25rem 0 1.5rem; color: var(--muted); }
+.google { width: 100%; }
 
 .divider {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin: 1.5rem 0;
-  color: #64748b;
-  font-size: 0.85rem;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 .divider::before,
-.divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.08);
-}
+.divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 
-.form {
-  display: grid;
-  gap: 1rem;
-}
+.form { display: grid; gap: 1rem; }
 
 label {
   display: grid;
   gap: 0.35rem;
-  font-size: 0.9rem;
-  color: #cbd5e1;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 input {
-  padding: 0.75rem 0.9rem;
+  min-height: 3rem;
+  padding: 0.7rem 0.9rem;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(2, 6, 23, 0.6);
-  color: #f8fafc;
-  font: inherit;
+  border: 1px solid var(--line);
+  background: var(--ink);
+  color: var(--text);
+  font-size: 1rem; /* 16px avoids iOS zoom on focus */
 }
-input:focus {
-  outline: 2px solid #2629e1;
-  outline-offset: 2px;
-}
+input:focus { border-color: var(--gold); }
 
 .errore {
   margin: 0;
-  color: #fda4af;
-  font-size: 0.9rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(225, 29, 72, 0.18);
+  border: 1px solid var(--salsa);
 }
+.hint { margin: 0; color: var(--muted); font-size: 0.9rem; }
 
-.submit {
-  padding: 0.85rem 1rem;
-  border: 0;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #e11d48, #2629e1);
-  color: #fff;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-.submit:hover:not(:disabled) { transform: translateY(-2px); }
-.submit:disabled { opacity: 0.6; cursor: wait; }
+.submit { width: 100%; }
 
 .toggle {
-  margin-top: 1.25rem;
+  display: block;
+  min-height: var(--touch);
+  margin-top: 0.75rem;
   width: 100%;
   border: 0;
   background: none;
-  color: #a5b4fc;
-  font: inherit;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 

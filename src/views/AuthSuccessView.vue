@@ -17,26 +17,19 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="container callback">
-    <p v-if="status === 'in-progress'" class="script">Accesso in corso…</p>
+  <main class="container state">
+    <div v-if="status === 'in-progress'" role="status">
+      <p class="script lead">Accesso in corso…</p>
+    </div>
     <template v-else>
-      <p class="script">Accesso non completato</p>
-      <p class="sub">{{ error }}</p>
-      <RouterLink to="/auth" class="back">Torna al login</RouterLink>
+      <h1 class="script">Accesso non completato</h1>
+      <p>{{ error }}</p>
+      <RouterLink to="/auth" class="btn btn-primary">Torna al login</RouterLink>
     </template>
   </main>
 </template>
 
 <style scoped>
-.callback {
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 0.75rem;
-  min-height: 60dvh;
-  text-align: center;
-}
-.script { font-family: 'Caveat', cursive; font-size: 2.2rem; color: #f8fafc; margin: 0; }
-.sub { color: #94a3b8; margin: 0; }
-.back { color: #a5b4fc; }
+.state { min-height: 60dvh; align-content: center; }
+.lead { margin: 0; font-size: 2.6rem; color: var(--text); }
 </style>

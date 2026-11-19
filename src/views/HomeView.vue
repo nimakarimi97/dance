@@ -3,41 +3,33 @@ import { gsap } from 'gsap'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { dances, getFiguresForDance } from '../data/danze.js'
+import { canAnimate, hasHover } from '../lib/motion.js'
 
 const root = ref(null)
 let animationContext = null
 
 const title = 'Salsa & Bachata'
-const cards = Object.values(dances)
+
+const cards = Object.values(dances).map(dance => {
+  const figures = getFiguresForDance(dance.id)
+  return { ...dance, total: figures.length, videos: figures.filter(figure => figure.youtubeId).length }
+})
 
 onMounted(async () => {
   await nextTick()
+  if (!canAnimate()) return
   animationContext = gsap.context(() => {
-    gsap.from('.hero-letter', {
-      yPercent: 110,
-      rotate: 8,
-      opacity: 0,
-      duration: 0.8,
-      ease: 'back.out(1.6)',
-      stagger: 0.03,
-    })
-    gsap.from('.hero-sub', { opacity: 0, y: 20, duration: 0.8, delay: 0.5 })
-    gsap.from('.dance-card', {
-      opacity: 0,
-      y: 60,
-      scale: 0.94,
-      duration: 0.9,
-      ease: 'power3.out',
-      stagger: 0.15,
-      delay: 0.7,
-    })
-    gsap.to('.float', { y: -12, duration: 2.4, ease: 'sine.inOut', yoyo: true, repeat: -1, stagger: 0.4 })
+    gsap.from('.hero-letter', { yPercent: 110, rotate: 8, opacity: 0, duration: 0.8, ease: 'back.out(1.6)', stagger: 0.03 })
+    gsap.from('.hero-sub', { opacity: 0, y: 20, duration: 0.8, delay: 0.5, stagger: 0.1 })
+    gsap.from('.dance-card', { opacity: 0, y: 60, scale: 0.94, duration: 0.9, ease: 'power3.out', stagger: 0.15, delay: 0.7, clearProps: 'transform,opacity' })
+    gsap.to('.float', { y: -10, duration: 2.4, ease: 'sine.inOut', yoyo: true, repeat: -1 })
   }, root.value)
 })
 
 onBeforeUnmount(() => animationContext?.revert())
 
 function tilt(event) {
+  if (!hasHover() || !canAnimate()) return
   const element = event.currentTarget
   const bounds = element.getBoundingClientRect()
   const x = (event.clientX - bounds.left) / bounds.width - 0.5
@@ -46,23 +38,35 @@ function tilt(event) {
 }
 
 function resetTilt(event) {
+  if (!hasHover() || !canAnimate()) return
   gsap.to(event.currentTarget, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'elastic.out(1, 0.5)' })
+}
+
+// Touch feedback: a quick press that springs back, since there is no hover on phones.
+function press(event) {
+  if (hasHover() || !canAnimate()) return
+  gsap.to(event.currentTarget, { scale: 0.97, duration: 0.15, ease: 'power2.out' })
+}
+
+function release(event) {
+  if (hasHover() || !canAnimate()) return
+  gsap.to(event.currentTarget, { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' })
 }
 </script>
 
 <template>
   <main ref="root" class="home container">
     <section class="hero">
-      <p class="hero-sub script float">Benvenuto in pista 💃🕺</p>
-      <h1 class="hero-title" aria-label="Salsa & Bachata">
+      <p class="hero-hi hero-sub script float">Benvenuto in pista 💃🕺</p>
+      <h1 class="hero-title" translate="no" aria-label="Salsa & Bachata">
         <span
           v-for="(letter, i) in title.split('')"
           :key="i"
           class="hero-letter"
-          :class="{ 'hero-letter-space': letter === ' ' }"
+          aria-hidden="true"
         >{{ letter === ' ' ? '\u00A0' : letter }}</span>
       </h1>
-      <p class="hero-sub">Scegli una danza e sfoglia le figure, divise per stile.</p>
+      <p class="hero-sub">Scegli una danza, apri una figura e provala con il video.</p>
     </section>
 
     <nav class="cards" aria-label="Danze">
@@ -71,77 +75,81 @@ function resetTilt(event) {
         :key="dance.id"
         :to="{ name: 'danza', params: { danza: dance.id } }"
         class="dance-card"
-        :class="`dance-card-${dance.id}`"
+        :data-dance="dance.id"
         @pointermove="tilt"
         @pointerleave="resetTilt"
+        @pointerdown="press"
+        @pointerup="release"
+        @pointercancel="release"
       >
-        <span class="card-count">{{ getFiguresForDance(dance.id).length }} figure</span>
+        <span class="card-count">
+          {{ dance.total }} {{ dance.total === 1 ? 'figura' : 'figure' }}<template v-if="dance.videos">, {{ dance.videos }} con video</template>
+        </span>
         <h2 class="card-title">{{ dance.nome }}</h2>
         <p class="card-desc">{{ dance.descrizione }}</p>
-        <span class="card-stili">
-          <span v-for="style in dance.stili" :key="style.id" class="chip">{{ style.nome }}</span>
+        <span class="card-foot">
+          <span class="card-stili">
+            <span v-for="style in dance.stili" :key="style.id" class="card-tag">{{ style.nome }}</span>
+          </span>
+          <span class="card-cta">Vedi le figure</span>
         </span>
-        <span class="card-cta script">Apri →</span>
       </RouterLink>
     </nav>
   </main>
 </template>
 
 <style scoped>
-.home { padding: clamp(2rem, 6vw, 5rem) 0 2rem; }
+.home { padding: clamp(1.5rem, 5vw, 4rem) 0 1rem; }
 
-.hero { text-align: center; margin-bottom: clamp(2.5rem, 6vw, 4.5rem); }
-
+.hero { margin-bottom: clamp(1.75rem, 5vw, 3rem); text-align: center; }
+.hero-hi {
+  margin: 0;
+  font-size: 1.9rem;
+  color: var(--gold);
+}
+.hero-letter { display: inline-block; }
 .hero-title {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0;
   font-family: 'Caveat', cursive;
-  font-size: clamp(3.5rem, 12vw, 8.5rem);
+  font-size: clamp(3.6rem, 14vw, 8rem);
   font-weight: 700;
-  background: linear-gradient(90deg, #fb7185, #a5b4fc 60%, #fcd34d);
+  line-height: 1;
+  background: var(--grad-text);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
-.hero-letter { display: inline-block; }
-
 .hero-sub {
-  margin: 0.8rem 0 0;
+  margin: 0.75rem 0 0;
+  max-width: 36ch;
+  margin-inline: auto;
   color: var(--muted);
-  font-size: clamp(1rem, 2.2vw, 1.2rem);
-}
-.hero-sub.script {
-  font-family: 'Caveat', cursive;
-  font-size: 1.6rem;
-  color: var(--amber);
-  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
 }
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: clamp(1.25rem, 3vw, 2rem);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
 }
 
 .dance-card {
-  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
-  min-height: 320px;
-  padding: clamp(1.5rem, 3vw, 2.25rem);
-  border-radius: var(--radius);
+  gap: 0.75rem;
+  min-height: 280px;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border-radius: 28px;
   text-decoration: none;
-  color: var(--light);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  color: var(--text);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--line);
   box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6);
   transform-style: preserve-3d;
+  position: relative;
   overflow: hidden;
-  transition: border-color 0.3s;
 }
 .dance-card::after {
   content: '';
@@ -150,32 +158,44 @@ function resetTilt(event) {
   width: 70%;
   aspect-ratio: 1;
   border-radius: 50%;
+  background: var(--accent);
   filter: blur(40px);
-  opacity: 0.45;
+  opacity: 0.5;
   pointer-events: none;
 }
-.dance-card-salsa::after { background: var(--rose); }
-.dance-card-bachata::after { background: var(--primary); }
-.dance-card:hover { border-color: rgba(255, 255, 255, 0.3); }
+.dance-card:hover { border-color: rgba(255, 255, 255, 0.35); }
+.dance-card:focus-visible { outline-offset: 4px; border-radius: 28px; }
+.dance-card > * { position: relative; z-index: 1; }
 
-.card-count {
-  font-size: 0.85rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
+.card-count { font-size: 0.95rem; font-weight: 600; color: var(--muted); }
 .card-title {
   font-family: 'Caveat', cursive;
-  font-size: clamp(3rem, 7vw, 4.5rem);
+  font-size: clamp(3.6rem, 12vw, 5.5rem);
   font-weight: 700;
 }
-.card-desc { margin: 0; color: #cbd5e1; line-height: 1.5; }
-.card-stili { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: auto; }
-.card-cta {
-  margin-top: 0.5rem;
-  font-size: 1.6rem;
-  color: var(--amber);
-  transition: transform 0.3s;
+.card-desc { margin: 0; max-width: 40ch; font-size: 1.05rem; color: #cbd5e1; }
+.card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: auto;
 }
-.dance-card:hover .card-cta { transform: translateX(8px); }
+.card-stili { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.card-tag {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.card-cta {
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--ink);
+  font-weight: 700;
+}
 </style>
