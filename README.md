@@ -26,8 +26,9 @@ La configurazione pubblica predefinita punta al progetto `dance-salsa-bachata` n
 - Database TablesDB: `dance`; tabella: `figures`.
 - Colonne: `nome` (varchar 255, obbligatorio), `danza` (enum salsa/bachata, obbligatorio), `stili` (array varchar 64, obbligatorio), `youtubeId` (varchar 32), `videoFileId` e `imageFileId` (varchar 36).
 - Bucket: `figure-media`, massimo **50.000.000 byte per file**. Video: MP4/WebM/MOV; immagini: JPG/JPEG/PNG/WebP.
-- Tabella e bucket: lettura `users`, creazione/modifica/eliminazione `label:admin`; sicurezza per singola riga/file disattivata per mantenere una politica uniforme. Nessun accesso ospite.
-- Gli utenti registrati hanno il ruolo base Appwrite `users`. Solo tramite Console/MCP/server fidato è possibile assegnare la label `admin`; preferenze e form del browser non possono concedere privilegi.
+- Tabella e bucket: lettura `users`; creazione/modifica/eliminazione `label:admin` e `label:superadmin`; sicurezza per singola riga/file disattivata per mantenere una politica uniforme. Nessun accesso ospite.
+- Gli utenti registrati hanno il ruolo base Appwrite `users`. Solo tramite Console/MCP/server fidato è possibile assegnare le label `admin` o `superadmin`; preferenze e form del browser non possono concedere privilegi. Un `superadmin` ha gli stessi diritti di modifica di un `admin`, più la gestione utenti.
+- Tabella `user_roles` (ID riga = ID utente): ruolo `user`, `admin` o `superadmin`, usato dalla dashboard per la gestione utenti. Modificare il ruolo lì non concede diritti Appwrite; i diritti dipendono dalle label.
 - L'autenticazione anonima è disattivata: serve registrarsi o accedere con un account.
 - I JSON in [src/data/](src/data/) contengono solo i metadati pubblici delle danze e degli stili. Le 11 figure iniziali sono state migrate in Appwrite.
 

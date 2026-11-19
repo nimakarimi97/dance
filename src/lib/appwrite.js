@@ -6,6 +6,7 @@ export const appwriteConfig = {
   projectId: import.meta.env.VITE_APPWRITE_PROJECT_ID || 'dance-salsa-bachata',
   databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID || 'dance',
   figuresTableId: import.meta.env.VITE_APPWRITE_FIGURES_TABLE_ID || 'figures',
+  userRolesTableId: import.meta.env.VITE_APPWRITE_USER_ROLES_TABLE_ID || 'user_roles',
   mediaBucketId: import.meta.env.VITE_APPWRITE_MEDIA_BUCKET_ID || 'figure-media',
 }
 

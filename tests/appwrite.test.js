@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { after, afterEach, mock, test } from 'node:test'
+import { after, afterEach, beforeEach, mock, test } from 'node:test'
 import { createServer } from 'vite'
 
 const server = await createServer({
@@ -15,6 +15,7 @@ const { listFigures, saveFigure, MAX_MEDIA_SIZE } = await server.ssrLoadModule('
 const catalog = await server.ssrLoadModule('/src/data/danze.js')
 
 afterEach(() => mock.restoreAll())
+beforeEach(() => mock.method(tablesDB, 'getRow', async () => ({ $id: 'member' })))
 after(() => server.close())
 
 test('signup rejects mismatched confirmation before creating an account', async () => {
@@ -29,6 +30,7 @@ test('signup creates a session and derives admin only from server labels', async
   const create = mock.method(account, 'create', async () => {})
   const session = mock.method(account, 'createEmailPasswordSession', async () => {})
   const get = mock.method(account, 'get', async () => ({ $id: 'member', labels: [], prefs: { role: 'admin' } }))
+  mock.method(tablesDB, 'getRow', async () => ({ $id: 'member' }))
   await auth.registerWithEmail({
     name: 'Test', email: 'test@example.com', password: 'matching-password', confirmPassword: 'matching-password',
   })
@@ -75,6 +77,12 @@ test('figure listing paginates beyond 100 rows', async () => {
   assert.equal(result.at(-1).id, 'last')
   assert.equal(list.mock.callCount(), 2)
   assert.ok(list.mock.calls[1].arguments[0].queries.some(query => query.includes('cursorAfter')))
+})
+
+test('new figures record the creator and edits leave it untouched', async () => {
+  const create = mock.method(tablesDB, 'createRow', async () => ({ $id: 'new' }))
+  await saveFigure({ data: { nome: 'Nuova' }, userId: 'user-1' })
+  assert.equal(create.mock.calls[0].arguments[0].data.createdBy, 'user-1')
 })
 
 test('media enforces the exact 50 MB limit and allowed extensions before upload', async () => {
