@@ -56,7 +56,7 @@ function focusMain() {
 </script>
 
 <template>
-  <div class="app">
+  <div class="app" :class="{ 'app--dashboard': route.name === 'dashboard' }">
     <div ref="blobs" class="blobs" aria-hidden="true">
       <span class="blob blob-rose" />
       <span class="blob blob-indigo" />
@@ -91,30 +91,27 @@ function focusMain() {
     </footer>
 
     <nav class="tabs" aria-label="Principale">
-      <RouterLink to="/" class="tab" :class="{ 'tab-on': route.name === 'home' }" :aria-current="route.name === 'home' ? 'page' : undefined">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" /></svg>
+      <RouterLink to="/" class="tab" :class="{ 'tab-on': route.name === 'home' }"
+        :aria-current="route.name === 'home' ? 'page' : undefined">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" />
+        </svg>
         <span>Home</span>
       </RouterLink>
-      <RouterLink
-        v-for="dance in danceList"
-        :key="dance.id"
-        :to="{ name: 'danza', params: { danza: dance.id } }"
-        class="tab"
-        :class="{ 'tab-on': activeDance === dance.id }"
-        :data-dance="dance.id"
-        :aria-current="activeDance === dance.id ? 'page' : undefined"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13M9 18a3 3 0 1 1-3-3 3 3 0 0 1 3 3zm11-2a3 3 0 1 1-3-3 3 3 0 0 1 3 3z" /></svg>
+      <RouterLink v-for="dance in danceList" :key="dance.id" :to="{ name: 'danza', params: { danza: dance.id } }"
+        class="tab" :class="{ 'tab-on': activeDance === dance.id }" :data-dance="dance.id"
+        :aria-current="activeDance === dance.id ? 'page' : undefined">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 18V5l11-2v13M9 18a3 3 0 1 1-3-3 3 3 0 0 1 3 3zm11-2a3 3 0 1 1-3-3 3 3 0 0 1 3 3z" />
+        </svg>
         <span>{{ dance.nome }}</span>
       </RouterLink>
-      <RouterLink
-        v-if="authEnabled"
-        :to="isLoggedIn ? { name: 'dashboard' } : { name: 'auth' }"
-        class="tab"
+      <RouterLink v-if="authEnabled" :to="isLoggedIn ? { name: 'dashboard' } : { name: 'auth' }" class="tab"
         :class="{ 'tab-on': route.name === 'auth' || route.name === 'dashboard' }"
-        :aria-current="route.name === 'auth' || route.name === 'dashboard' ? 'page' : undefined"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 8a8 8 0 0 1 16 0z" /></svg>
+        :aria-current="route.name === 'auth' || route.name === 'dashboard' ? 'page' : undefined">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 8a8 8 0 0 1 16 0z" />
+        </svg>
         <span>{{ isLoggedIn ? 'Profilo' : 'Accedi' }}</span>
       </RouterLink>
     </nav>
@@ -130,6 +127,14 @@ function focusMain() {
   overflow-x: clip;
 }
 
+.app--dashboard {
+  background: #111b2d;
+}
+
+.app--dashboard .blobs {
+  display: none;
+}
+
 .blobs {
   position: fixed;
   inset: 0;
@@ -137,6 +142,7 @@ function focusMain() {
   pointer-events: none;
   overflow: hidden;
 }
+
 .blob {
   position: absolute;
   width: 55vmax;
@@ -146,9 +152,25 @@ function focusMain() {
   opacity: 0.35;
   will-change: transform;
 }
-.blob-rose { background: var(--salsa); top: -20%; left: -15%; }
-.blob-indigo { background: var(--bachata); bottom: -25%; right: -15%; }
-.blob-amber { background: var(--gold); top: 30%; left: 40%; opacity: 0.18; }
+
+.blob-rose {
+  background: var(--salsa);
+  top: -20%;
+  left: -15%;
+}
+
+.blob-indigo {
+  background: var(--bachata);
+  bottom: -25%;
+  right: -15%;
+}
+
+.blob-amber {
+  background: var(--gold);
+  top: 30%;
+  left: 40%;
+  opacity: 0.18;
+}
 
 .skip {
   position: fixed;
@@ -162,7 +184,10 @@ function focusMain() {
   font-weight: 700;
   transform: translateY(-200%);
 }
-.skip:focus { transform: none; }
+
+.skip:focus {
+  transform: none;
+}
 
 .topbar {
   position: sticky;
@@ -187,6 +212,7 @@ function focusMain() {
   font-size: 1.7rem;
   font-weight: 700;
 }
+
 .brand-mark {
   display: block;
   width: 2.4rem;
@@ -217,8 +243,17 @@ function focusMain() {
   font-size: 0.9rem;
   color: var(--muted);
 }
-.footer a { display: inline-block; padding: 0.6rem; color: var(--text); }
-.copyright { margin: 0; font-size: 0.8rem; }
+
+.footer a {
+  display: inline-block;
+  padding: 0.6rem;
+  color: var(--text);
+}
+
+.copyright {
+  margin: 0;
+  font-size: 0.8rem;
+}
 
 /* Mobile: app-style bottom tab bar. */
 .tabs {
@@ -232,6 +267,7 @@ function focusMain() {
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--line);
 }
+
 .tab {
   flex: 1;
   display: flex;
@@ -246,6 +282,7 @@ function focusMain() {
   text-decoration: none;
   transition: color 0.2s;
 }
+
 .tab svg {
   width: 1.5rem;
   height: 1.5rem;
@@ -255,8 +292,15 @@ function focusMain() {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.tab-on { color: var(--accent-text, #fcd34d); }
-.tab-on[data-dance] svg { fill: currentColor; fill-opacity: 0.2; }
+
+.tab-on {
+  color: var(--accent-text, #fcd34d);
+}
+
+.tab-on[data-dance] svg {
+  fill: currentColor;
+  fill-opacity: 0.2;
+}
 
 /* Desktop: same links, moved to the top right. */
 @media (min-width: 760px) {
@@ -269,13 +313,36 @@ function focusMain() {
     backdrop-filter: none;
     border: 0;
   }
-  .tab { flex-direction: row; gap: 0.5rem; padding: 0 1rem; border-radius: 999px; font-size: 0.95rem; }
-  .tab:hover { background: var(--ink-2); }
-  .footer { padding-bottom: 2rem; }
+
+  .tab {
+    flex-direction: row;
+    gap: 0.5rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    font-size: 0.95rem;
+  }
+
+  .tab:hover {
+    background: var(--ink-2);
+  }
+
+  .footer {
+    padding-bottom: 2rem;
+  }
 }
 
 .page-enter-active,
-.page-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
-.page-enter-from { opacity: 0; transform: translateY(14px); }
-.page-leave-to { opacity: 0; transform: translateY(-10px); }
+.page-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
 </style>

@@ -33,7 +33,9 @@ La configurazione pubblica predefinita punta al progetto `dance-salsa-bachata` n
 
 ### Aggiungere figure, immagini e video
 
-Accedi con un account con label `admin`, apri **Profilo** e usa **Gestione figure e video**. Puoi creare una figura o selezionarne una esistente, scegliere gli stili e caricare video/immagine. In alternativa puoi inserire un ID YouTube di 11 caratteri.
+Apri **Profilo** per accedere alla dashboard: riepilogo del repertorio, disponibilità dei video, catalogo ricercabile e dettagli dell'account. Puoi combinare ricerca per nome, danza e disponibilità video; **Vedi le figure senza video** porta direttamente al catalogo filtrato. Su laptop la navigazione laterale collega le sezioni; su mobile i controlli e il catalogo si adattano allo schermo.
+
+Con un account con label `admin`, usa **Nuova figura** oppure il pulsante di modifica di una riga del catalogo. Nell'editor puoi scegliere gli stili e caricare video/immagine; in alternativa puoi inserire un ID YouTube di 11 caratteri. L'editor occupa lo schermo sui telefoni, chiede conferma prima di scartare modifiche non salvate e conserva i dati se il salvataggio fallisce. Gli altri utenti possono consultare il catalogo e aprire le figure, senza controlli di modifica.
 
 I video Appwrite hanno la precedenza su YouTube. I caricamenti falliti prima del salvataggio della riga vengono rimossi; sostituire un file mantiene quello precedente nel bucket, senza eliminazioni distruttive automatiche.
 
