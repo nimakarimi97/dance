@@ -5,7 +5,10 @@ import { RouterLink } from 'vue-router'
 import { dances, getFiguresForDance } from '../data/danze.js'
 import { canAnimate, hasHover } from '../lib/motion.js'
 import { isLoggedIn } from '../lib/auth.js'
+import { isFeatureEnabled } from '../config/features.js'
 import InstallGuide from '../components/InstallGuide.vue'
+
+const publicContent = isFeatureEnabled('publicContent')
 
 const root = ref(null)
 let animationContext = null
@@ -95,7 +98,7 @@ function release(event) {
         class="dance-card" :data-dance="dance.id" @pointermove="tilt" @pointerleave="resetTilt" @pointerdown="press"
         @pointerup="release" @pointercancel="release">
         <span class="card-count">
-          <template v-if="isLoggedIn && dance.total">{{ dance.total }} {{ dance.total === 1 ? 'figura' : 'figure'
+          <template v-if="(isLoggedIn || publicContent) && dance.total">{{ dance.total }} {{ dance.total === 1 ? 'figura' : 'figure'
           }}<template v-if="dance.videos">, {{ dance.videos }} con video</template></template>
           <template v-else>Figure e video riservati agli iscritti</template>
         </span>

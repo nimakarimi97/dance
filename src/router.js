@@ -9,12 +9,14 @@ import DashboardView from './views/DashboardView.vue'
 import FiguraView from './views/FiguraView.vue'
 import HomeView from './views/HomeView.vue'
 
+const contentRequiresAuth = !isFeatureEnabled('publicContent')
+
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', name: 'home', component: HomeView },
-    { path: '/danza/:danza', name: 'danza', component: DanzaView, props: true, meta: { requiresAuth: true } },
-    { path: '/figura/:figura', name: 'figura', component: FiguraView, props: true, meta: { requiresAuth: true } },
+    { path: '/danza/:danza', name: 'danza', component: DanzaView, props: true, meta: { requiresAuth: contentRequiresAuth } },
+    { path: '/figura/:figura', name: 'figura', component: FiguraView, props: true, meta: { requiresAuth: contentRequiresAuth } },
     { path: '/auth', name: 'auth', component: AuthView, meta: { feature: 'auth', guestOnly: true } },
     { path: '/auth/success', name: 'auth-success', component: AuthSuccessView, meta: { feature: 'auth' } },
     { path: '/auth/failure', name: 'auth-failure', component: AuthFailureView, meta: { feature: 'auth' } },

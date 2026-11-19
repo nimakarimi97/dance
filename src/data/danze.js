@@ -3,6 +3,7 @@ import salsa from './salsa.json'
 import { onMounted, shallowRef, watch } from 'vue'
 import { isLoggedIn } from '../lib/auth.js'
 import { listFigures } from '../lib/figures.js'
+import { isFeatureEnabled } from '../config/features.js'
 
 const danceData = [salsa, bachata]
 
@@ -14,6 +15,8 @@ export const figures = shallowRef([])
 const loading = shallowRef(false)
 const error = shallowRef('')
 let generation = 0
+
+const canReadFigures = () => isFeatureEnabled('publicContent') || isLoggedIn.value
 
 watch(isLoggedIn, loggedIn => {
   if (loggedIn) return
@@ -30,7 +33,7 @@ export async function refreshFigures() {
   loading.value = true
   try {
     const result = await listFigures()
-    if (request === generation && isLoggedIn.value) figures.value = result
+    if (request === generation && canReadFigures()) figures.value = result
   } catch (cause) {
     if (request === generation) error.value = cause.message || 'Impossibile caricare le figure. Riprova.'
   } finally {
