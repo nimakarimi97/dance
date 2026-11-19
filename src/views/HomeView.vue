@@ -4,6 +4,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { dances, getFiguresForDance } from '../data/danze.js'
 import { canAnimate, hasHover } from '../lib/motion.js'
+import InstallGuide from '../components/InstallGuide.vue'
 
 const root = ref(null)
 let animationContext = null
@@ -56,6 +57,7 @@ function release(event) {
 
 <template>
   <main ref="root" class="home container">
+    <InstallGuide />
     <section class="hero">
       <p class="hero-hi hero-sub script float">Benvenuto in pista 💃🕺</p>
       <h1 class="hero-title" translate="no" aria-label="Salsa & Bachata">
