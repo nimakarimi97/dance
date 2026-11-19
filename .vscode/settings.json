@@ -1,0 +1,7 @@
+{
+  "vue.format.wrapAttributes": "force",
+  "[vue]": {
+    "editor.defaultFormatter": "Vue.volar",
+    "editor.formatOnSave": true
+  }
+}
