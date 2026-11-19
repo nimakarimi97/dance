@@ -66,7 +66,7 @@ function focusMain() {
 
     <header class="topbar">
       <RouterLink to="/" class="brand">
-        <span class="brand-mark" aria-hidden="true">♪</span>
+        <img class="brand-mark" src="/pwa-192.png" alt="" aria-hidden="true" />
         <span class="brand-name" translate="no">Salsa &amp; Bachata</span>
       </RouterLink>
     </header>
@@ -183,15 +183,12 @@ function focusMain() {
   font-weight: 700;
 }
 .brand-mark {
-  display: grid;
-  place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 50%;
-  background: var(--grad);
-  color: #fff;
-  font-family: 'Archivo', sans-serif;
-  font-size: 1rem;
+  display: block;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: 0 0 auto;
+  border-radius: 0.65rem;
+  object-fit: cover;
 }
 
 .offline {
