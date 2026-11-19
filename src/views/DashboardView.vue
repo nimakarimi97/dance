@@ -1,9 +1,11 @@
 <script setup>
 import { computed, nextTick, shallowRef, useTemplateRef } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { currentUser, isAdmin, signOut } from '../lib/auth.js'
+import { currentUser, isAdmin, isSuperAdmin, signOut } from '../lib/auth.js'
 import { dances, figures, refreshFigures, useFigureCatalog } from '../data/danze.js'
 import DashboardCatalog from '../components/DashboardCatalog.vue'
+import AdminAnalytics from '../components/AdminAnalytics.vue'
+import AdminUserRoles from '../components/AdminUserRoles.vue'
 import FigureEditor from '../components/FigureEditor.vue'
 import StudioIcon from '../components/StudioIcon.vue'
 
@@ -16,6 +18,16 @@ const selectedFigure = shallowRef(null)
 const savedId = shallowRef('')
 const videoFilter = shallowRef('all')
 const createButton = useTemplateRef('create-button')
+const sectionHeading = useTemplateRef('section-heading')
+const activeSection = shallowRef('panoramica')
+const sectionTitles = {
+  panoramica: 'Panoramica',
+  catalogo: 'Catalogo figure',
+  visualizzazioni: 'Visualizzazioni',
+  utenti: 'Utenti',
+  account: 'Il mio account',
+}
+const sectionTitle = computed(() => sectionTitles[activeSection.value])
 let editorTrigger = null
 
 const firstName = computed(() => currentUser.value?.name?.trim().split(/\s+/)[0] || 'in pista')
@@ -46,10 +58,11 @@ const joinedDate = computed(() => {
   return date ? new Intl.DateTimeFormat('it', { month: 'long', year: 'numeric' }).format(new Date(date)) : null
 })
 
-function scrollToSection(id) {
-  const element = document.getElementById(id)
-  element?.scrollIntoView({ block: 'start' })
-  element?.focus({ preventScroll: true })
+async function showSection(id) {
+  activeSection.value = id
+  await nextTick()
+  window.scrollTo({ top: 0 })
+  sectionHeading.value?.focus({ preventScroll: true })
 }
 
 function openEditor(figure = null) {
@@ -76,7 +89,7 @@ async function onSaved(id) {
 
 function showMissingVideos() {
   videoFilter.value = 'missing'
-  scrollToSection('catalogo')
+  showSection('catalogo')
 }
 
 async function signOutUser() {
@@ -103,43 +116,46 @@ async function signOutUser() {
         <div><strong>Il tuo studio</strong><span>Salsa &amp; Bachata</span></div>
       </div>
       <nav class="workspace-nav" aria-label="Navigazione dashboard">
-        <a href="#panoramica" class="selected" @click.prevent="scrollToSection('panoramica')">
+        <a href="#panoramica" :class="{ selected: activeSection === 'panoramica' }"
+          @click.prevent="showSection('panoramica')">
           <StudioIcon name="grid" /> Panoramica
         </a>
-        <a href="#catalogo" @click.prevent="scrollToSection('catalogo')">
+        <a href="#catalogo" :class="{ selected: activeSection === 'catalogo' }"
+          @click.prevent="showSection('catalogo')">
           <StudioIcon name="library" /> Catalogo figure
           <span v-if="!loading && !error" class="nav-count">{{ figures.length }}</span>
         </a>
-        <a href="#account" @click.prevent="scrollToSection('account')">
+        <a v-if="isAdmin" href="#visualizzazioni" :class="{ selected: activeSection === 'visualizzazioni' }"
+          @click.prevent="showSection('visualizzazioni')">
+          <StudioIcon name="video" /> Visualizzazioni
+        </a>
+        <a v-if="isSuperAdmin" href="#utenti" :class="{ selected: activeSection === 'utenti' }"
+          @click.prevent="showSection('utenti')">
+          <StudioIcon name="user" /> Utenti
+        </a>
+        <a href="#account" :class="{ selected: activeSection === 'account' }" @click.prevent="showSection('account')">
           <StudioIcon name="user" /> Il mio account
         </a>
       </nav>
-      <div class="rail-dances">
-        <p>Ritrova il tuo ritmo</p>
-        <RouterLink v-for="dance in dances" :key="dance.id" :to="{ name: 'danza', params: { danza: dance.id } }"><span
-            :data-dance="dance.id" class="dance-dot" />{{ dance.nome }}
-          <StudioIcon name="arrow" />
-        </RouterLink>
-      </div>
       <div class="rail-note">
         <StudioIcon name="shield" />
         <p>{{ isAdmin ? 'Spazio amministratore' : 'Spazio personale' }}<span>I tuoi contenuti, al sicuro.</span></p>
       </div>
-      <a href="#account" class="rail-person" @click.prevent="scrollToSection('account')"><span class="avatar small">{{
-          initials }}</span>
+      <a href="#account" class="rail-person" @click.prevent="showSection('account')"><span class="avatar small">{{
+        initials }}</span>
         <div>
           <strong>{{ currentUser?.name || 'Il tuo account' }}</strong><span>{{
             isAdmin ? 'Amministratore' : 'Ballerino'
-            }}</span>
+          }}</span>
         </div>
       </a>
     </aside>
 
     <div class="workspace-main">
-      <header id="panoramica" class="workspace-header" tabindex="-1">
+      <header class="workspace-header">
         <div>
           <p class="greeting">Bentornato, {{ firstName }}</p>
-          <h1>Panoramica</h1>
+          <h1 ref="section-heading" tabindex="-1">{{ sectionTitle }}</h1>
           <p class="header-description">
             {{
               isAdmin ? 'Fai crescere il repertorio. Una figura alla volta.' : 'Il tuo prossimo passo comincia da qui.'
@@ -163,97 +179,104 @@ async function signOutUser() {
         </button>
       </div>
 
-      <section class="metrics" aria-label="Riepilogo del catalogo" :aria-busy="loading">
-        <article class="metric">
-          <span class="metric-icon">
-            <StudioIcon name="library" />
-          </span>
-          <div>
-            <p>Figure nel catalogo</p>
-            <strong>{{ loading || error ? '—' : figures.length }}</strong>
-          </div>
-        </article>
-        <article class="metric">
-          <span class="metric-icon mint">
-            <StudioIcon name="video" />
-          </span>
-          <div>
-            <p>Video disponibili</p>
-            <strong>{{ loading || error ? '—' : withVideo }}</strong>
-          </div>
-        </article>
-        <article class="metric">
-          <span class="metric-icon amber">
-            <StudioIcon name="clock" />
-          </span>
-          <div>
-            <p>Video da aggiungere</p>
-            <strong>{{ loading || error ? '—' : missingVideo }}</strong>
-          </div>
-        </article>
-      </section>
-
-      <div class="overview-grid">
-        <section class="repertoire-panel" aria-labelledby="repertoire-title">
-          <div class="panel-heading">
-            <h2 id="repertoire-title">Due ritmi, il tuo repertorio</h2>
-            <StudioIcon name="music" />
-          </div>
-          <div class="dance-overview">
-            <RouterLink v-for="dance in danceSummary" :key="dance.id"
-              :to="{ name: 'danza', params: { danza: dance.id } }" class="dance-summary" :data-dance="dance.id">
-              <div class="dance-summary-top">
-                <span class="dance-initial" aria-hidden="true">{{ dance.nome[0] }}</span>
-                <StudioIcon name="arrow" />
-              </div>
-              <h3>{{ dance.nome }}</h3>
-              <p>
-                {{
-                  loading
-                    ? 'Caricamento catalogo…'
-                    : error
-                      ? 'Dati non disponibili'
-                      : `${dance.total} figure, ${dance.videos} con video`
-                }}
-              </p>
-              <span class="dance-style-list">{{dance.stili.map((style) => style.nome).join(' / ')}}</span>
-            </RouterLink>
-          </div>
+      <template v-if="activeSection === 'panoramica'">
+        <section class="metrics" aria-label="Riepilogo del catalogo" :aria-busy="loading">
+          <article class="metric">
+            <span class="metric-icon">
+              <StudioIcon name="library" />
+            </span>
+            <div>
+              <p>Figure nel catalogo</p>
+              <strong>{{ loading || error ? '—' : figures.length }}</strong>
+            </div>
+          </article>
+          <article class="metric">
+            <span class="metric-icon mint">
+              <StudioIcon name="video" />
+            </span>
+            <div>
+              <p>Video disponibili</p>
+              <strong>{{ loading || error ? '—' : withVideo }}</strong>
+            </div>
+          </article>
+          <article class="metric">
+            <span class="metric-icon amber">
+              <StudioIcon name="clock" />
+            </span>
+            <div>
+              <p>Video da aggiungere</p>
+              <strong>{{ loading || error ? '—' : missingVideo }}</strong>
+            </div>
+          </article>
         </section>
-        <section class="coverage-panel" aria-labelledby="coverage-title">
-          <div class="panel-heading">
-            <h2 id="coverage-title">Il catalogo prende forma</h2>
-            <StudioIcon name="video" />
-          </div>
-          <div class="coverage-value">
-            <strong>{{ loading || error ? '—' : `${videoCoverage}%` }}</strong><span>delle figure ha un video</span>
-          </div>
-          <progress v-if="!loading && !error" :value="withVideo" :max="figures.length || 1"
-            aria-label="Figure con video" />
-          <p>
-            {{
-              loading || error
-                ? 'I dati saranno disponibili con il catalogo.'
-                : missingVideo
-                  ? `${missingVideo} ${missingVideo === 1 ? 'figura aspetta' : 'figure aspettano'} un video per passare dalla
-            teoria alla pista.`
-                  : figures.length
-                    ? 'Ogni figura ha il suo video. Il repertorio è pronto.'
-                    : 'Il primo video darà vita al tuo catalogo.'
-            }}
-          </p>
-          <button v-if="missingVideo && !loading && !error" type="button" class="text-action"
-            @click="showMissingVideos">
-            Vedi le figure senza video
-            <StudioIcon name="arrow" />
-          </button>
-        </section>
-      </div>
 
-      <DashboardCatalog :figures="figures" :loading="loading" :error="error" :admin="isAdmin"
-        v-model:video-filter="videoFilter" @create="openEditor()" @edit="openEditor" @retry="retry" />
+        <div class="overview-grid">
+          <section class="repertoire-panel" aria-labelledby="repertoire-title">
+            <div class="panel-heading">
+              <h2 id="repertoire-title">Due ritmi, il tuo repertorio</h2>
+              <StudioIcon name="music" />
+            </div>
+            <div class="dance-overview">
+              <RouterLink v-for="dance in danceSummary" :key="dance.id"
+                :to="{ name: 'danza', params: { danza: dance.id } }" class="dance-summary" :data-dance="dance.id">
+                <div class="dance-summary-top">
+                  <span class="dance-initial" aria-hidden="true">{{ dance.nome[0] }}</span>
+                  <StudioIcon name="arrow" />
+                </div>
+                <h3>{{ dance.nome }}</h3>
+                <p>
+                  {{
+                    loading
+                      ? 'Caricamento catalogo…'
+                      : error
+                        ? 'Dati non disponibili'
+                        : `${dance.total} figure, ${dance.videos} con video`
+                  }}
+                </p>
+                <span class="dance-style-list">{{dance.stili.map((style) => style.nome).join(' / ')}}</span>
+              </RouterLink>
+            </div>
+          </section>
+          <section class="coverage-panel" aria-labelledby="coverage-title">
+            <div class="panel-heading">
+              <h2 id="coverage-title">Il catalogo prende forma</h2>
+              <StudioIcon name="video" />
+            </div>
+            <div class="coverage-value">
+              <strong>{{ loading || error ? '—' : `${videoCoverage}%` }}</strong><span>delle figure ha un video</span>
+            </div>
+            <progress v-if="!loading && !error" :value="withVideo" :max="figures.length || 1"
+              aria-label="Figure con video" />
+            <p>
+              {{
+                loading || error
+                  ? 'I dati saranno disponibili con il catalogo.'
+                  : missingVideo
+                    ? `${missingVideo} ${missingVideo === 1 ? 'figura aspetta' : 'figure aspettano'} un video per passare
+              dalla
+              teoria alla pista.`
+                    : figures.length
+                      ? 'Ogni figura ha il suo video. Il repertorio è pronto.'
+                      : 'Il primo video darà vita al tuo catalogo.'
+              }}
+            </p>
+            <button v-if="missingVideo && !loading && !error" type="button" class="text-action"
+              @click="showMissingVideos">
+              Vedi le figure senza video
+              <StudioIcon name="arrow" />
+            </button>
+          </section>
+        </div>
 
-      <section id="account" class="account-panel" aria-labelledby="account-title" tabindex="-1">
+      </template>
+
+      <DashboardCatalog v-if="activeSection === 'catalogo'" :figures="figures" :loading="loading" :error="error"
+        :admin="isAdmin" v-model:video-filter="videoFilter" @create="openEditor()" @edit="openEditor" @retry="retry" />
+
+      <AdminAnalytics v-if="isAdmin && activeSection === 'visualizzazioni'" />
+      <AdminUserRoles v-if="isSuperAdmin && activeSection === 'utenti'" />
+
+      <section v-if="activeSection === 'account'" id="account" class="account-panel" aria-labelledby="account-title">
         <div class="account-person">
           <span class="avatar">{{ initials }}</span>
           <div>
@@ -771,38 +794,6 @@ async function signOutUser() {
     border: 1px solid var(--studio-line);
     border-radius: 5px;
     font-size: 0.75rem;
-  }
-
-  .rail-dances {
-    margin-top: 2rem;
-  }
-
-  .rail-dances p {
-    font-size: 0.75rem;
-    color: var(--studio-muted);
-    margin: 0 0 0.6rem 0.6rem;
-  }
-
-  .rail-dances a {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    min-height: 2.75rem;
-    padding: 0.5rem 0.6rem;
-    text-decoration: none;
-    font-size: 0.8rem;
-  }
-
-  .rail-dances .studio-icon {
-    margin-left: auto;
-    width: 0.9rem;
-  }
-
-  .dance-dot {
-    height: 0.45rem;
-    width: 0.45rem;
-    border-radius: 50%;
-    background: var(--accent-text);
   }
 
   .rail-note {
