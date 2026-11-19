@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "appwrite-typescript": {
+      "source": "appwrite/skills",
+      "commit": "88d7f81668ffe032f6cfdd0d3128b75fed804a3c",
+      "sourceType": "github",
+      "skillPath": "skills/appwrite-typescript/SKILL.md",
+      "computedHash": "54f12be95272f8ce8278e078390b0fa8524af6a5610ed644dcb718dece3c21d0"
+    }
+  }
+}
