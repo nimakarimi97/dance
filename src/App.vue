@@ -12,6 +12,7 @@ const route = useRoute()
 const authEnabled = isFeatureEnabled('auth')
 const danceList = Object.values(dances)
 const baseTitle = 'Salsa & Bachata · Figure'
+const copyrightYears = new Date().getFullYear()
 
 const blobs = ref(null)
 let blobContext = null
@@ -84,6 +85,9 @@ function focusMain() {
 
     <footer class="footer">
       <a href="https://nimakarimi.me" target="_blank" rel="noopener">nimakarimi.me</a>
+      <p class="copyright">
+        © {{ copyrightYears }} Nima Karimi · <a href="mailto:dance@nimakarimi.me">dance@nimakarimi.me</a>
+      </p>
     </footer>
 
     <nav class="tabs" aria-label="Principale">
@@ -203,6 +207,10 @@ function focusMain() {
 }
 
 .footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
   margin-top: auto;
   padding: 2rem 1rem calc(var(--nav-h) + 2rem + env(safe-area-inset-bottom));
   text-align: center;
@@ -210,6 +218,7 @@ function focusMain() {
   color: var(--muted);
 }
 .footer a { display: inline-block; padding: 0.6rem; color: var(--text); }
+.copyright { margin: 0; font-size: 0.8rem; }
 
 /* Mobile: app-style bottom tab bar. */
 .tabs {
