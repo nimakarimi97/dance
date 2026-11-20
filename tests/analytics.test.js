@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { summarizeViews } from '../src/lib/analytics.js'
+import { buildViewTimeline, summarizeViews } from '../src/lib/analytics.js'
 
 test('view summary counts totals, unique viewers and ranks figures by views', () => {
   const figures = [
@@ -48,4 +48,40 @@ test('view summary groups by dance and style and splits 7 and 30 day windows', (
     { id: 'salsa', nome: 'Salsa', views: 1 },
   ])
   assert.deepEqual(stats.byStyle[0], { id: 'on1', nome: 'On1', views: 3 })
+})
+
+test('view timeline fills missing days and ignores future or invalid timestamps', () => {
+  const now = Date.parse('2025-06-30T12:00:00Z')
+  const timeline = buildViewTimeline([
+    { $createdAt: '2025-06-29T08:00:00Z' },
+    { $createdAt: '2025-06-29T18:00:00Z' },
+    { $createdAt: '2025-07-01T08:00:00Z' },
+    { $createdAt: 'not-a-date' },
+  ], 3, now)
+
+  assert.equal(timeline.values.length, 3)
+  assert.deepEqual(timeline.values, [0, 2, 0])
+})
+
+test('all-time timeline shows a bounded twelve-month view', () => {
+  const now = Date.parse('2025-06-30T12:00:00Z')
+  const timeline = buildViewTimeline([
+    { $createdAt: '2024-01-15T08:00:00Z' },
+    { $createdAt: '2025-06-29T08:00:00Z' },
+  ], 'all', now)
+
+  assert.equal(timeline.values.length, 12)
+  assert.equal(timeline.values.reduce((total, count) => total + count, 0), 1)
+  assert.equal(timeline.values.at(-1), 1)
+})
+
+test('view summary excludes future events from recent-period totals', () => {
+  const now = Date.parse('2025-06-30T12:00:00Z')
+  const stats = summarizeViews([
+    { figureId: 'a', userId: 'u1', $createdAt: '2025-06-29T08:00:00Z' },
+    { figureId: 'a', userId: 'u2', $createdAt: '2025-07-01T08:00:00Z' },
+  ], [{ id: 'a', nome: 'Alfa' }], {}, now)
+
+  assert.equal(stats.last7Days, 1)
+  assert.equal(stats.last30Days, 1)
 })

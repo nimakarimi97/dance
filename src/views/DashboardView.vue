@@ -1,14 +1,14 @@
 <script setup>
-import { computed, nextTick, shallowRef, useTemplateRef } from 'vue'
+import { computed, defineAsyncComponent, nextTick, shallowRef, useTemplateRef } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { currentUser, isAdmin, isSuperAdmin, signOut } from '../lib/auth.js'
 import { dances, figures, refreshFigures, useFigureCatalog } from '../data/danze.js'
 import DashboardCatalog from '../components/DashboardCatalog.vue'
-import AdminAnalytics from '../components/AdminAnalytics.vue'
 import AdminUserRoles from '../components/AdminUserRoles.vue'
 import FigureEditor from '../components/FigureEditor.vue'
 import StudioIcon from '../components/StudioIcon.vue'
 
+const AdminAnalytics = defineAsyncComponent(() => import('../components/AdminAnalytics.vue'))
 const router = useRouter()
 const { loading, error, retry } = useFigureCatalog()
 const isSigningOut = shallowRef(false)
