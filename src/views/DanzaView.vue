@@ -3,6 +3,9 @@ import { gsap } from 'gsap'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { findDance, getFiguresForDance, useFigureCatalog } from '../data/danze.js'
+import { currentUser } from '../lib/auth.js'
+import { ANALYTICS_EVENTS } from '../lib/analytics.js'
+import { recordAnalyticsEvent } from '../lib/figures.js'
 import { canAnimate } from '../lib/motion.js'
 
 const props = defineProps({ danza: { type: String, required: true } })
@@ -41,6 +44,17 @@ const countLabel = computed(() => {
 
 function styleName(id) {
   return dance.value?.stili.find((style) => style.id === id)?.nome
+}
+
+function trackFigureClick(figureId) {
+  const userId = currentUser.value?.$id
+  if (!userId) return
+  recordAnalyticsEvent({
+    eventType: ANALYTICS_EVENTS.FIGURE_CARD_CLICK,
+    figureId,
+    eventTarget: figureId,
+    userId,
+  })
 }
 
 function updateQuery(patch) {
@@ -159,7 +173,8 @@ onBeforeUnmount(() => {
 
       <ul v-if="!loading && !error && filteredFigures.length" class="grid">
         <li v-for="figure in filteredFigures" :key="figure.id">
-          <RouterLink :to="{ name: 'figura', params: { figura: figure.id } }" class="figura-card">
+          <RouterLink :to="{ name: 'figura', params: { figura: figure.id } }" class="figura-card"
+            @click="trackFigureClick(figure.id)">
             <span class="figura-nome">{{ figure.nome }}</span>
             <span class="figura-stili">
               <span v-for="styleId in figure.stili" :key="styleId" class="tag">{{ styleName(styleId) }}</span>
@@ -223,7 +238,7 @@ onBeforeUnmount(() => {
   gap: 0.75rem;
   margin-inline: -1rem;
   padding: 0.75rem 1rem;
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(9, 13, 26, 0.94);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
@@ -280,8 +295,9 @@ onBeforeUnmount(() => {
   height: 100%;
   min-height: 150px;
   padding: 1.1rem 1.25rem;
-  border-radius: var(--radius);
-  border-left: 6px solid var(--accent-text);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-text);
+  border-radius: 0.9rem;
   text-decoration: none;
   background: var(--ink-2);
   transition:
@@ -291,6 +307,8 @@ onBeforeUnmount(() => {
 
 .figura-card:hover {
   background: var(--ink-3);
+  border-color: rgba(255, 255, 255, 0.24);
+  border-left-color: var(--accent-text);
 }
 
 .figura-card:active {

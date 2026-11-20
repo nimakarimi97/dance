@@ -11,7 +11,14 @@ const server = await createServer({
 })
 const { account, storage, tablesDB } = await server.ssrLoadModule('/src/lib/appwrite.js')
 const auth = await server.ssrLoadModule('/src/lib/auth.js')
-const { listFigures, saveFigure, MAX_MEDIA_SIZE } = await server.ssrLoadModule('/src/lib/figures.js')
+const {
+  listFigures,
+  recordAnalyticsEvent,
+  recordFigureView,
+  saveFigure,
+  MAX_MEDIA_SIZE,
+} = await server.ssrLoadModule('/src/lib/figures.js')
+const { ANALYTICS_EVENTS } = await server.ssrLoadModule('/src/lib/analytics.js')
 const catalog = await server.ssrLoadModule('/src/data/danze.js')
 
 afterEach(() => mock.restoreAll())
@@ -77,6 +84,43 @@ test('figure listing paginates beyond 100 rows', async () => {
   assert.equal(result.at(-1).id, 'last')
   assert.equal(list.mock.callCount(), 2)
   assert.ok(list.mock.calls[1].arguments[0].queries.some(query => query.includes('cursorAfter')))
+})
+
+test('analytics events write their type and omit empty figure targets', async () => {
+  const create = mock.method(tablesDB, 'createRow', async params => params)
+  await recordAnalyticsEvent({
+    eventType: ANALYTICS_EVENTS.DASHBOARD_NAV_CLICK,
+    eventTarget: 'catalogo',
+    userId: 'user-1',
+  })
+
+  const params = create.mock.calls[0].arguments[0]
+  assert.equal(params.tableId, 'figure_views')
+  assert.equal(params.data.eventType, 'dashboard_nav_click')
+  assert.equal(params.data.eventTarget, 'catalogo')
+  assert.equal(params.data.userId, 'user-1')
+  assert.equal('figureId' in params.data, false)
+
+  await recordAnalyticsEvent({
+    eventType: ANALYTICS_EVENTS.PAGE_VIEW,
+    eventTarget: 'home',
+    userId: 'user-1',
+  })
+  assert.equal(create.mock.calls[1].arguments[0].data.eventType, 'page_view')
+  assert.equal(create.mock.calls[1].arguments[0].data.eventTarget, 'home')
+
+  await recordFigureView('figure-1', 'user-1')
+  assert.equal(create.mock.calls[2].arguments[0].data.eventType, 'figure_view')
+  assert.equal(create.mock.calls[2].arguments[0].data.figureId, 'figure-1')
+})
+
+test('analytics events are not written for anonymous users', async () => {
+  const create = mock.method(tablesDB, 'createRow', async params => params)
+  await recordAnalyticsEvent({
+    eventType: ANALYTICS_EVENTS.FIGURE_CARD_CLICK,
+    figureId: 'figure-1',
+  })
+  assert.equal(create.mock.callCount(), 0)
 })
 
 test('new figures record the creator and edits leave it untouched', async () => {

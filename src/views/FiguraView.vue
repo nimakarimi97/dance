@@ -78,12 +78,11 @@ watch(currentFigure, async (figure) => {
   animationContext?.add(animate)
 })
 
-// Views are analytics only, so a failed write must never block the page.
 watch(
   () => currentFigure.value?.id,
   (figureId) => {
     const userId = currentUser.value?.$id
-    if (figureId && userId) recordFigureView(figureId, userId).catch(() => {})
+    if (figureId && userId) recordFigureView(figureId, userId)
   },
   { immediate: true },
 )
@@ -220,10 +219,10 @@ onBeforeUnmount(() => animationContext?.revert())
 .player {
   position: relative;
   aspect-ratio: 16 / 9;
-  border-radius: var(--radius);
+  border-radius: 1rem;
   overflow: hidden;
   background: #000;
-  box-shadow: 0 40px 80px -40px rgba(38, 41, 225, 0.6);
+  box-shadow: 0 24px 54px -36px rgba(2, 6, 23, 0.9);
   border: 1px solid var(--line);
 }
 
@@ -290,7 +289,8 @@ onBeforeUnmount(() => animationContext?.revert())
   gap: 0.1rem;
   min-height: 4.5rem;
   padding: 0.8rem 1.1rem;
-  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
   background: var(--ink-2);
   text-decoration: none;
   transition: background-color 0.2s;
@@ -298,6 +298,7 @@ onBeforeUnmount(() => animationContext?.revert())
 
 .pager-link:hover {
   background: var(--ink-3);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .pager-link.next {

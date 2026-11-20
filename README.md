@@ -33,6 +33,12 @@ La configurazione pubblica predefinita punta al progetto `dance-salsa-bachata` n
 - L'autenticazione anonima è disattivata: serve registrarsi o accedere con un account.
 - I JSON in [src/data/](src/data/) contengono solo i metadati pubblici delle danze e degli stili. Le 11 figure iniziali sono state migrate in Appwrite.
 
+### Analytics
+
+La tabella `figure_views` registra eventi solo per utenti autenticati. Mantieni i permessi di creazione per `users` e di lettura per `label:admin` e `label:superadmin`; le righe non sono leggibili dagli utenti normali. Le colonne sono `figureId` (varchar 36, facoltativa), `userId` (varchar 36, obbligatoria), `eventType` (enum facoltativo, default `figure_view`) e `eventTarget` (varchar 255, facoltativa).
+
+Gli eventi includono visite alle pagine dell'app, aperture delle pagine figura, click sulle schede di danza/figura e sulla navigazione, oltre alle azioni admin riuscite (creazione/modifica figure e cambio ruolo). I record storici senza `eventType` continuano a contare come aperture figura. I click anonimi e gli avvii dei video YouTube esterni non vengono conteggiati.
+
 ### Aggiungere figure, immagini e video
 
 Apri **Profilo** per accedere alla dashboard: riepilogo del repertorio, disponibilità dei video, catalogo ricercabile e dettagli dell'account. Puoi combinare ricerca per nome, danza e disponibilità video; **Vedi le figure senza video** porta direttamente al catalogo filtrato. Su laptop la navigazione laterale collega le sezioni; su mobile i controlli e il catalogo si adattano allo schermo.

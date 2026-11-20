@@ -1,10 +1,13 @@
 <script setup>
-import { Bar, Line } from 'vue-chartjs'
+import { Bar, Doughnut, Line } from 'vue-chartjs'
 import {
+  ArcElement,
   BarElement,
   CategoryScale,
   Chart as ChartJS,
+  DoughnutController,
   Filler,
+  Legend,
   LinearScale,
   LineElement,
   PointElement,
@@ -12,10 +15,13 @@ import {
 } from 'chart.js'
 import { computed, onMounted, shallowRef } from 'vue'
 import { dances, figures } from '../data/danze.js'
-import { buildViewTimeline, summarizeViews } from '../lib/analytics.js'
-import { listFigureViews } from '../lib/figures.js'
+import { buildEventTimeline, summarizeViews } from '../lib/analytics.js'
+import { listAnalyticsEvents } from '../lib/figures.js'
 
-ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, BarElement, Filler, Tooltip)
+ChartJS.register(
+  CategoryScale, LinearScale, LineElement, PointElement, BarElement,
+  DoughnutController, ArcElement, Filler, Legend, Tooltip,
+)
 
 const ranges = [
   { value: 7, label: '7 giorni' },
@@ -24,48 +30,42 @@ const ranges = [
   { value: 'all', label: 'Sempre' },
 ]
 
-const views = shallowRef(null)
+const events = shallowRef(null)
 const loading = shallowRef(true)
 const error = shallowRef('')
 const range = shallowRef(30)
 const now = shallowRef(Date.now())
 
-const periodViews = computed(() => {
-  if (!views.value) return []
-  if (range.value === 'all') return views.value
+const periodEvents = computed(() => {
+  if (!events.value) return []
+  if (range.value === 'all') return events.value
   const since = new Date(now.value)
   since.setUTCHours(0, 0, 0, 0)
   since.setUTCDate(since.getUTCDate() - range.value + 1)
-  return views.value.filter((view) => {
-    const createdAt = new Date(view.$createdAt).getTime()
+  return events.value.filter((event) => {
+    const createdAt = new Date(event.$createdAt).getTime()
     return createdAt >= since.getTime() && createdAt <= now.value
   })
 })
 
-const stats = computed(() => views.value
-  ? summarizeViews(periodViews.value, figures.value, dances, now.value)
+const stats = computed(() => events.value
+  ? summarizeViews(periodEvents.value, figures.value, dances, now.value)
   : null)
-const lifetimeStats = computed(() => views.value
-  ? summarizeViews(views.value, figures.value, dances, now.value)
+const lifetimeStats = computed(() => events.value
+  ? summarizeViews(events.value, figures.value, dances, now.value)
   : null)
-const timeline = computed(() => views.value
-  ? buildViewTimeline(periodViews.value, range.value, now.value)
-  : { labels: [], values: [] })
+const timeline = computed(() => events.value
+  ? buildEventTimeline(periodEvents.value, range.value, now.value)
+  : { labels: [], views: [], pageViews: [], clicks: [], adminActions: [] })
 const chartSummary = computed(() => {
-  const count = timeline.value.values.reduce((total, value) => total + value, 0)
-  const activePeriods = timeline.value.values.filter((value) => value > 0).length
-  const unit = range.value === 'all'
-    ? activePeriods === 1 ? 'mese' : 'mesi'
-    : activePeriods === 1 ? 'giorno' : 'giorni'
-  const period = range.value === 'all' ? 'negli ultimi 12 mesi' : 'nel periodo selezionato'
-  return `${count} aperture ${period}, distribuite su ${activePeriods} ${unit}.`
+  return `${number(stats.value?.totalPageViews ?? 0)} visite di pagina, ${number(stats.value?.totalClicks ?? 0)} click e ${number(stats.value?.adminActions ?? 0)} azioni amministrative nel periodo.`
 })
 const topFigures = computed(() => stats.value?.top ?? [])
 const danceChartData = computed(() => ({
   labels: stats.value?.byDance.map((item) => item.nome) ?? [],
   datasets: [{
     data: stats.value?.byDance.map((item) => item.views) ?? [],
-    backgroundColor: ['#f27b9b', '#a69bff'],
+    backgroundColor: ['#a78bfa', '#22d3ee'],
     borderRadius: 4,
     barThickness: 14,
   }],
@@ -74,23 +74,66 @@ const styleChartData = computed(() => ({
   labels: stats.value?.byStyle.slice(0, 6).map((item) => item.nome) ?? [],
   datasets: [{
     data: stats.value?.byStyle.slice(0, 6).map((item) => item.views) ?? [],
-    backgroundColor: '#93dfc2',
+    backgroundColor: '#34d399',
     borderRadius: 4,
     barThickness: 12,
   }],
 }))
 const trendChartData = computed(() => ({
   labels: timeline.value.labels,
+  datasets: [
+    {
+      label: 'Visite pagina',
+      data: timeline.value.pageViews,
+      borderColor: '#a78bfa',
+      backgroundColor: 'rgba(167, 139, 250, 0.13)',
+      borderWidth: 2,
+      fill: true,
+      tension: 0.32,
+      pointRadius: timeline.value.pageViews.length > 30 ? 0 : 2,
+      pointHoverRadius: 5,
+      pointBackgroundColor: '#e2e8f0',
+    },
+    {
+      label: 'Click',
+      data: timeline.value.clicks,
+      borderColor: '#22d3ee',
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      tension: 0.32,
+      pointRadius: timeline.value.clicks.length > 30 ? 0 : 2,
+      pointHoverRadius: 5,
+    },
+    {
+      label: 'Azioni admin',
+      data: timeline.value.adminActions,
+      borderColor: '#fbbf24',
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      tension: 0.32,
+      pointRadius: timeline.value.adminActions.length > 30 ? 0 : 2,
+      pointHoverRadius: 5,
+    },
+  ],
+}))
+const eventLabels = {
+  figure_view: 'Aperture figura',
+  figure_card_click: 'Click su figura',
+  dance_card_click: 'Click su danza',
+  dashboard_nav_click: 'Navigazione dashboard',
+  app_nav_click: 'Navigazione app',
+  admin_figure_create: 'Figure create',
+  admin_figure_edit: 'Figure modificate',
+  admin_role_promote: 'Ruoli promossi',
+  admin_role_demote: 'Ruoli retrocessi',
+}
+const eventBreakdownData = computed(() => ({
+  labels: stats.value?.byEventType.map((item) => eventLabels[item.eventType] || item.eventType) ?? [],
   datasets: [{
-    data: timeline.value.values,
-    borderColor: '#c4b5fd',
-    backgroundColor: 'rgba(196, 181, 253, 0.13)',
-    borderWidth: 2,
-    fill: true,
-    tension: 0.32,
-    pointRadius: timeline.value.values.length > 30 ? 0 : 2,
-    pointHoverRadius: 5,
-    pointBackgroundColor: '#f3f6fc',
+    data: stats.value?.byEventType.map((item) => item.count) ?? [],
+    backgroundColor: ['#a78bfa', '#22d3ee', '#38bdf8', '#818cf8', '#64748b', '#34d399', '#fbbf24', '#fb7185', '#f97316'],
+    borderColor: '#101829',
+    borderWidth: 3,
   }],
 }))
 
@@ -100,11 +143,15 @@ const trendOptions = {
   animation: false,
   interaction: { intersect: false, mode: 'index' },
   plugins: {
-    legend: { display: false },
+    legend: {
+      display: true,
+      position: 'bottom',
+      labels: { color: '#94a3b8', usePointStyle: true, boxWidth: 7, padding: 18 },
+    },
     tooltip: {
       displayColors: false,
       callbacks: {
-        label: (context) => `${context.parsed.y} ${context.parsed.y === 1 ? 'apertura' : 'aperture'}`,
+        label: (context) => `${context.dataset.label}: ${context.parsed.y}`,
       },
     },
   },
@@ -112,14 +159,27 @@ const trendOptions = {
     x: {
       grid: { display: false },
       border: { display: false },
-      ticks: { color: '#a9b8cf', maxTicksLimit: 8, maxRotation: 0 },
+      ticks: { color: '#94a3b8', maxTicksLimit: 8, maxRotation: 0 },
     },
     y: {
       beginAtZero: true,
       border: { display: false, dash: [3, 5] },
-      grid: { color: 'rgba(169, 184, 207, 0.12)' },
-      ticks: { color: '#a9b8cf', precision: 0, maxTicksLimit: 5 },
+      grid: { color: 'rgba(148, 163, 184, 0.12)' },
+      ticks: { color: '#94a3b8', precision: 0, maxTicksLimit: 5 },
     },
+  },
+}
+
+const eventBreakdownOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: { color: '#94a3b8', usePointStyle: true, boxWidth: 8, padding: 14 },
+    },
+    tooltip: { displayColors: false },
   },
 }
 
@@ -142,13 +202,13 @@ function barOptions(maxTicksLimit) {
       x: {
         beginAtZero: true,
         border: { display: false },
-        grid: { color: 'rgba(169, 184, 207, 0.12)' },
-        ticks: { color: '#a9b8cf', precision: 0, maxTicksLimit },
+        grid: { color: 'rgba(148, 163, 184, 0.12)' },
+        ticks: { color: '#94a3b8', precision: 0, maxTicksLimit },
       },
       y: {
         border: { display: false },
         grid: { display: false },
-        ticks: { color: '#f3f6fc' },
+        ticks: { color: '#e2e8f0' },
       },
     },
   }
@@ -165,7 +225,7 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    views.value = await listFigureViews()
+    events.value = await listAnalyticsEvents()
     now.value = Date.now()
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Impossibile caricare le statistiche.'
@@ -183,9 +243,10 @@ onMounted(load)
       <div>
         <p class="analytics-kicker">Il ritmo del tuo studio</p>
         <h2 id="analytics-title">La pista, in numeri</h2>
-        <p class="analytics-intro">Scopri quali figure fanno tornare le persone a ballare.</p>
+        <p class="analytics-intro">Visite, click e azioni nel repertorio.</p>
+        <p class="analytics-note">Conteggi per utenti autenticati; gli avvii dei video YouTube esterni non sono inclusi.</p>
       </div>
-      <div class="live-note"><span aria-hidden="true"></span>Dati aggiornati</div>
+      <div class="live-note"><span aria-hidden="true"></span>Dati caricati</div>
     </header>
 
     <p v-if="error" class="analytics-error" role="alert">
@@ -193,7 +254,7 @@ onMounted(load)
       <button type="button" class="retry-button" @click="load">Riprova</button>
     </p>
     <p v-else-if="loading" class="analytics-state" role="status" aria-busy="true">
-      Caricamento delle visualizzazioni…
+      Caricamento delle attività…
     </p>
     <template v-else>
       <div class="period-control" role="group" aria-label="Periodo delle statistiche">
@@ -215,9 +276,25 @@ onMounted(load)
           <span class="kpi-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg>
           </span>
-          <p>Aperture nel periodo</p>
+          <p>Aperture figura</p>
           <strong>{{ number(stats.totalViews) }}</strong>
-          <span class="kpi-foot">Attività registrata</span>
+          <span class="kpi-foot">Pagine delle figure aperte</span>
+        </article>
+        <article class="kpi-card">
+          <span class="kpi-icon kpi-icon-mint" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /></svg>
+          </span>
+          <p>Visite di pagina</p>
+          <strong>{{ number(stats.totalPageViews) }}</strong>
+          <span class="kpi-foot">Home, danza, figura e account</span>
+        </article>
+        <article class="kpi-card">
+          <span class="kpi-icon kpi-icon-cyan" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </span>
+          <p>Click nel periodo</p>
+          <strong>{{ number(stats.totalClicks) }}</strong>
+          <span class="kpi-foot">Danze, figure e navigazione</span>
         </article>
         <article class="kpi-card">
           <span class="kpi-icon kpi-icon-rose" aria-hidden="true">
@@ -225,18 +302,18 @@ onMounted(load)
           </span>
           <p>Persone raggiunte</p>
           <strong>{{ number(stats.uniqueViewers) }}</strong>
-          <span class="kpi-foot">Utenti distinti nel periodo</span>
-        </article>
-        <article class="kpi-card">
-          <span class="kpi-icon kpi-icon-mint" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 19V5m0 14h16M8 15l4-4 3 2 5-6" /></svg>
-          </span>
-          <p>Ultimi 7 giorni</p>
-          <strong>{{ number(lifetimeStats.last7Days) }}</strong>
-          <span class="kpi-foot">Aperture recenti</span>
+          <span class="kpi-foot">Utenti che hanno visitato</span>
         </article>
         <article class="kpi-card">
           <span class="kpi-icon kpi-icon-gold" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3v18m6-14H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H6" /></svg>
+          </span>
+          <p>Azioni amministrative</p>
+          <strong>{{ number(stats.adminActions) }}</strong>
+          <span class="kpi-foot">Nel periodo selezionato</span>
+        </article>
+        <article class="kpi-card">
+          <span class="kpi-icon kpi-icon-rose" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M12 3v18m6-14H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H6" /></svg>
           </span>
           <p>Figure mai aperte</p>
@@ -249,20 +326,25 @@ onMounted(load)
         <section class="panel trend-panel" aria-labelledby="trend-title">
           <div class="panel-heading">
             <div>
-              <h3 id="trend-title">Come si muove la pista</h3>
+              <h3 id="trend-title">Attività nel tempo</h3>
               <p>{{ chartSummary }}</p>
             </div>
-            <span class="panel-total">{{ number(stats.totalViews) }} <small>aperture</small></span>
+            <span class="panel-total">{{ number(stats.totalPageViews + stats.totalClicks + stats.adminActions) }} <small>eventi</small></span>
           </div>
-          <div class="trend-chart" role="img" :aria-label="`Andamento delle aperture. ${chartSummary}`">
+          <div class="trend-chart" role="img" :aria-label="`Andamento di aperture, click e azioni admin. ${chartSummary}`">
             <Line :data="trendChartData" :options="trendOptions" />
           </div>
           <table class="visually-hidden">
-            <caption>Visualizzazioni per {{ range === 'all' ? 'mese' : 'giorno' }}</caption>
-            <thead><tr><th scope="col">Periodo</th><th scope="col">Aperture</th></tr></thead>
+            <caption>Attività per {{ range === 'all' ? 'mese' : 'giorno' }}</caption>
+            <thead>
+              <tr><th scope="col">Periodo</th><th scope="col">Visite</th><th scope="col">Click</th><th scope="col">Azioni admin</th></tr>
+            </thead>
             <tbody>
               <tr v-for="(label, index) in timeline.labels" :key="label">
-                <th scope="row">{{ label }}</th><td>{{ timeline.values[index] }}</td>
+                <th scope="row">{{ label }}</th>
+                <td>{{ timeline.pageViews[index] }}</td>
+                <td>{{ timeline.clicks[index] }}</td>
+                <td>{{ timeline.adminActions[index] }}</td>
               </tr>
             </tbody>
           </table>
@@ -271,8 +353,8 @@ onMounted(load)
         <section class="panel ranking-panel" aria-labelledby="ranking-title">
           <div class="panel-heading">
             <div>
-              <h3 id="ranking-title">Figure più amate</h3>
-              <p>Quelle che attirano più curiosità.</p>
+              <h3 id="ranking-title">Figure più viste</h3>
+              <p>Aperture delle pagine figura nel periodo.</p>
             </div>
             <span class="ranking-mark" aria-hidden="true">Top 5</span>
           </div>
@@ -285,6 +367,45 @@ onMounted(load)
           </ol>
           <p v-else class="empty-note">Non ci sono ancora aperture in questo periodo.</p>
           <p class="ranking-foot">{{ number(figures.length) }} figure nel catalogo</p>
+        </section>
+
+        <section class="panel breakdown-panel" aria-labelledby="events-title">
+          <div class="panel-heading">
+            <div><h3 id="events-title">Composizione eventi</h3><p>Come si distribuisce l’attività.</p></div>
+          </div>
+          <div v-if="stats.byEventType.length" class="event-chart" role="img"
+            :aria-label="`Composizione degli eventi: ${stats.byEventType.map((item) => `${eventLabels[item.eventType] || item.eventType}, ${item.count}`).join('; ')}`">
+            <Doughnut :data="eventBreakdownData" :options="eventBreakdownOptions" />
+          </div>
+          <p v-else class="empty-note">La composizione apparirà con le prime attività.</p>
+          <table class="visually-hidden">
+            <caption>Conteggio degli eventi per tipo</caption>
+            <thead><tr><th scope="col">Evento</th><th scope="col">Conteggio</th></tr></thead>
+            <tbody>
+              <tr v-for="item in stats.byEventType" :key="item.eventType">
+                <th scope="row">{{ eventLabels[item.eventType] || item.eventType }}</th>
+                <td>{{ item.count }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="panel ranking-panel" aria-labelledby="click-ranking-title">
+          <div class="panel-heading">
+            <div>
+              <h3 id="click-ranking-title">Figure più aperte dai cataloghi</h3>
+              <p>Click sulle schede di Salsa e Bachata.</p>
+            </div>
+            <span class="ranking-mark" aria-hidden="true">Click</span>
+          </div>
+          <ol v-if="stats.topClickedFigures.length" class="ranking-list">
+            <li v-for="(figure, index) in stats.topClickedFigures" :key="figure.id">
+              <span class="rank-number">{{ String(index + 1).padStart(2, '0') }}</span>
+              <span class="rank-name">{{ figure.nome }}</span>
+              <strong>{{ number(figure.clicks) }}</strong>
+            </li>
+          </ol>
+          <p v-else class="empty-note">Nessun click sulle schede nel periodo selezionato.</p>
         </section>
 
         <section class="panel breakdown-panel" aria-labelledby="dance-title">
@@ -324,16 +445,16 @@ onMounted(load)
 
 <style scoped>
 .analytics {
-  --analytics-panel: #172338;
-  --analytics-raised: #1d2b42;
-  --analytics-line: #33425a;
-  --analytics-text: #f3f6fc;
-  --analytics-muted: #a9b8cf;
+  --analytics-panel: #101829;
+  --analytics-raised: #152037;
+  --analytics-line: rgba(148, 163, 184, 0.2);
+  --analytics-text: #e2e8f0;
+  --analytics-muted: #94a3b8;
   min-width: 0;
   padding: clamp(1.25rem, 3vw, 2rem);
   border: 1px solid var(--analytics-line);
-  border-radius: 22px;
-  background: #131f32;
+  border-radius: 1rem;
+  background: rgba(16, 24, 41, 0.96);
   color: var(--analytics-text);
 }
 
@@ -370,6 +491,12 @@ onMounted(load)
   color: var(--analytics-muted);
 }
 
+.analytics-note {
+  margin: 0.3rem 0 0;
+  color: var(--analytics-muted);
+  font-size: 0.75rem;
+}
+
 .live-note {
   display: inline-flex;
   align-items: center;
@@ -383,8 +510,8 @@ onMounted(load)
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 50%;
-  background: #93dfc2;
-  box-shadow: 0 0 0 4px rgba(147, 223, 194, 0.12);
+  background: #34d399;
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.12);
 }
 
 .period-control {
@@ -427,14 +554,14 @@ onMounted(load)
 }
 
 .period-options button.active {
-  background: #c4b5fd;
-  color: #211b3c;
+  background: #7c3aed;
+  color: #fff;
   font-weight: 700;
 }
 
 .kpis {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.8rem;
   margin-top: 1rem;
 }
@@ -445,13 +572,13 @@ onMounted(load)
   min-width: 0;
   padding: 1.1rem;
   border: 1px solid var(--analytics-line);
-  border-radius: 14px;
+  border-radius: 0.9rem;
   background: var(--analytics-panel);
 }
 
 .kpi-primary {
-  background: linear-gradient(145deg, #332e55, #20243f 78%);
-  border-color: #514777;
+  background: linear-gradient(145deg, rgba(124, 58, 237, 0.22), #101829 78%);
+  border-color: rgba(124, 58, 237, 0.35);
 }
 
 .kpi-icon {
@@ -474,9 +601,10 @@ onMounted(load)
   stroke-width: 1.7;
 }
 
-.kpi-icon-rose { background: rgba(242, 123, 155, 0.13); color: #f27b9b; }
-.kpi-icon-mint { background: rgba(147, 223, 194, 0.13); color: #93dfc2; }
-.kpi-icon-gold { background: rgba(245, 205, 138, 0.13); color: #f5cd8a; }
+.kpi-icon-rose { background: rgba(251, 113, 133, 0.13); color: #fda4af; }
+.kpi-icon-mint { background: rgba(52, 211, 153, 0.13); color: #6ee7b7; }
+.kpi-icon-gold { background: rgba(245, 158, 11, 0.13); color: #fcd34d; }
+.kpi-icon-cyan { background: rgba(34, 211, 238, 0.13); color: #67e8f9; }
 
 .kpi-card p {
   margin: 1rem 0 0.15rem;
@@ -509,7 +637,7 @@ onMounted(load)
   min-width: 0;
   padding: 1.2rem;
   border: 1px solid var(--analytics-line);
-  border-radius: 14px;
+  border-radius: 0.9rem;
   background: var(--analytics-panel);
 }
 
@@ -549,6 +677,12 @@ onMounted(load)
 .breakdown-chart {
   height: 150px;
   margin-top: 1rem;
+}
+
+.event-chart {
+  height: 210px;
+  max-width: 360px;
+  margin: 0.8rem auto 0;
 }
 
 .ranking-mark {
@@ -643,7 +777,7 @@ onMounted(load)
 @media (max-width: 520px) {
   .analytics {
     padding: 1rem;
-    border-radius: 16px;
+    border-radius: 0.9rem;
   }
 
   .analytics-header {

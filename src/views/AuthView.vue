@@ -138,9 +138,10 @@ async function handleGoogleSignIn() {
   animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   width: min(100%, 440px);
   padding: clamp(1.25rem, 5vw, 2.25rem);
-  border-radius: 28px;
-  background: var(--ink-2);
+  border-radius: 1rem;
+  background: linear-gradient(160deg, #172338, #101829);
   border: 1px solid var(--line);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.32);
 }
 
 h1 {
@@ -189,7 +190,7 @@ label {
 input {
   min-height: 3rem;
   padding: 0.7rem 0.9rem;
-  border-radius: 12px;
+  border-radius: 0.7rem;
   border: 1px solid var(--line);
   background: var(--ink);
   color: var(--text);
@@ -198,7 +199,7 @@ input {
 }
 
 input:focus {
-  border-color: var(--gold);
+  border-color: #a78bfa;
 }
 
 .errore {
@@ -230,6 +231,16 @@ input:focus {
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+}
+
+.toggle:hover:not(:disabled) {
+  color: #c4b5fd;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
 }
 
 @keyframes rise {

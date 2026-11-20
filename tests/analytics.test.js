@@ -1,6 +1,44 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { buildViewTimeline, summarizeViews } from '../src/lib/analytics.js'
+import { buildEventTimeline, buildViewTimeline, summarizeViews } from '../src/lib/analytics.js'
+
+test('event summary separates views, clicks and admin actions', () => {
+  const figures = [
+    { id: 'a', nome: 'Alfa', danza: 'salsa', stili: ['on1'] },
+    { id: 'b', nome: 'Beta', danza: 'bachata', stili: ['sensual'] },
+  ]
+  const events = [
+    { eventType: 'page_view', eventTarget: 'home', userId: 'u1' },
+    { eventType: 'figure_view', figureId: 'a', userId: 'u1' },
+    { eventType: 'figure_card_click', figureId: 'a', eventTarget: 'a', userId: 'u1' },
+    { eventType: 'dance_card_click', eventTarget: 'bachata', userId: 'u2' },
+    { eventType: 'admin_figure_edit', figureId: 'b', userId: 'admin-1' },
+    { figureId: 'b', userId: 'u2' },
+  ]
+
+  const stats = summarizeViews(events, figures)
+  assert.equal(stats.totalPageViews, 1)
+  assert.equal(stats.totalViews, 2)
+  assert.equal(stats.totalClicks, 2)
+  assert.equal(stats.adminActions, 1)
+  assert.equal(stats.uniqueViewers, 2)
+  assert.deepEqual(stats.topClickedFigures, [{ id: 'a', nome: 'Alfa', clicks: 1 }])
+})
+
+test('event timeline groups views, clicks and admin actions independently', () => {
+  const now = Date.parse('2025-06-30T12:00:00Z')
+  const timeline = buildEventTimeline([
+    { eventType: 'page_view', $createdAt: '2025-06-29T07:00:00Z' },
+    { eventType: 'figure_view', $createdAt: '2025-06-29T08:00:00Z' },
+    { eventType: 'figure_card_click', $createdAt: '2025-06-29T18:00:00Z' },
+    { eventType: 'admin_figure_edit', $createdAt: '2025-06-30T08:00:00Z' },
+  ], 3, now)
+
+  assert.deepEqual(timeline.pageViews, [0, 1, 0])
+  assert.deepEqual(timeline.views, [0, 1, 0])
+  assert.deepEqual(timeline.clicks, [0, 1, 0])
+  assert.deepEqual(timeline.adminActions, [0, 0, 1])
+})
 
 test('view summary counts totals, unique viewers and ranks figures by views', () => {
   const figures = [
