@@ -1,12 +1,26 @@
 {
   "version": 2,
   "skills": {
+    "admin-dashboard": {
+      "source": "curiositech/some_claude_skills",
+      "commit": "d47e2e5ded912f448b36da6c391be724d3e50496",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/admin-dashboard/SKILL.md",
+      "computedHash": "5ac7f352bb5d4e6b36ab80288b233a2b686c350167fe49fec7f35752c63ff026"
+    },
     "appwrite-typescript": {
       "source": "appwrite/skills",
       "commit": "88d7f81668ffe032f6cfdd0d3128b75fed804a3c",
       "sourceType": "github",
       "skillPath": "skills/appwrite-typescript/SKILL.md",
       "computedHash": "54f12be95272f8ce8278e078390b0fa8524af6a5610ed644dcb718dece3c21d0"
+    },
+    "client-health-dashboard": {
+      "source": "OneWave-AI/claude-skills",
+      "commit": "b2267d9171af4f56848d82992381b20b89b44056",
+      "sourceType": "github",
+      "skillPath": "client-health-dashboard/SKILL.md",
+      "computedHash": "ce88bc6598d1f3ff595fb522b52c1bbcf64499645a5ac90038f06e498b17881c"
     },
     "create-adaptable-composable": {
       "source": "vuejs-ai/skills",
@@ -21,6 +35,13 @@
       "sourceType": "github",
       "skillPath": "skills/frontend-design/SKILL.md",
       "computedHash": "83485963700bcf11d5bf78118facb301676b69d918fee2e45a95e7f1a2840f6c"
+    },
+    "interface-design": {
+      "source": "Dammyjay93/interface-design",
+      "commit": "2f9be3206855bcb2d1d0af262c8bae25cba6658d",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/interface-design/SKILL.md",
+      "computedHash": "1491bb966a2c289550e0d6eb25c19b0570ead479240f6b2ba5766d94599ea744"
     },
     "ui-ux-pro-max": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
