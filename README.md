@@ -18,6 +18,7 @@ La configurazione pubblica predefinita punta al progetto `dance-salsa-bachata` n
 - Registrazione con nome, email, password e conferma password; accesso automatico dopo la registrazione.
 - Accesso email/password oppure Google, se il provider è configurato nel progetto.
 - Le pagine delle danze e delle figure richiedono una sessione valida. I dati non sono inclusi nel bundle pubblico né memorizzati nella cache della PWA.
+- Il contenuto pubblico è disattivato per impostazione predefinita. Imposta `VITE_FEATURE_PUBLIC_CONTENT=true` solo se vuoi consentire l'accesso ospite e hai configurato di conseguenza i permessi Appwrite; il deploy GitHub Pages forza il valore sicuro `false`.
 - Registra i domini del sito come piattaforme Web in Appwrite (`localhost` per lo sviluppo).
 - Se l'autenticazione è disattivata tramite feature flag, le pagine protette restano inaccessibili.
 

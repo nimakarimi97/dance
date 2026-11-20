@@ -34,6 +34,8 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          VITE_FEATURE_PUBLIC_CONTENT: 'false'
 
       - name: Test
         run: pnpm test
