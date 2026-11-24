@@ -36,6 +36,7 @@ jobs:
         run: pnpm build
         env:
           VITE_FEATURE_PUBLIC_CONTENT: 'false'
+          VITE_FEATURE_GUEST_PREVIEW: ${{ vars.VITE_FEATURE_GUEST_PREVIEW || 'true' }}
 
       - name: Test
         run: pnpm test

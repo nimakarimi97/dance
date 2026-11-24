@@ -2,7 +2,7 @@
 import { gsap } from 'gsap'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { findDance, getFiguresForDance, useFigureCatalog } from '../data/danze.js'
+import { findDance, getFiguresForDance, guestPreviewActive, guestPreviewRemaining, isFigureLocked, useFigureCatalog } from '../data/danze.js'
 import { currentUser } from '../lib/auth.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
 import { recordAnalyticsEvent } from '../lib/figures.js'
@@ -158,6 +158,14 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
+      <p v-if="guestPreviewActive" class="preview-note" role="status">
+        <template v-if="guestPreviewRemaining > 0">
+          Anteprima ospite: puoi aprire ancora {{ guestPreviewRemaining }} {{ guestPreviewRemaining === 1 ? 'figura' : 'figure' }}.
+        </template>
+        <template v-else>Hai aperto le figure di anteprima.</template>
+        <RouterLink :to="{ name: 'auth', query: { redirect: route.fullPath } }">Accedi per vedere tutto</RouterLink>
+      </p>
+
       <p v-if="loading" class="count" role="status">
         Caricamento figure…
       </p>
@@ -179,8 +187,8 @@ onBeforeUnmount(() => {
             <span class="figura-stili">
               <span v-for="styleId in figure.stili" :key="styleId" class="tag">{{ styleName(styleId) }}</span>
             </span>
-            <span class="figura-stato" :class="{ ready: figure.youtubeId || figure.videoFileId }">
-              {{ figure.youtubeId || figure.videoFileId ? 'Guarda il video' : 'Video in arrivo' }}
+            <span class="figura-stato" :class="{ ready: !isFigureLocked(figure.id) && (figure.youtubeId || figure.videoFileId) }">
+              {{ isFigureLocked(figure.id) ? 'Accedi per aprire' : (figure.youtubeId || figure.videoFileId ? 'Guarda il video' : 'Video in arrivo') }}
             </span>
           </RouterLink>
         </li>
@@ -271,6 +279,22 @@ onBeforeUnmount(() => {
 
 .search input::placeholder {
   color: var(--muted);
+}
+
+.preview-note {
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold);
+  border-radius: 0.75rem;
+  background: var(--ink-2);
+  color: var(--muted);
+}
+
+.preview-note a {
+  margin-left: 0.5rem;
+  color: var(--text);
+  font-weight: 700;
 }
 
 .count {

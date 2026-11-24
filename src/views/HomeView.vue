@@ -2,9 +2,9 @@
 import { gsap } from 'gsap'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { dances, getFiguresForDance, refreshFigures } from '../data/danze.js'
+import { canReadFigures, dances, getFiguresForDance, refreshFigures } from '../data/danze.js'
 import { canAnimate, hasHover } from '../lib/motion.js'
-import { currentUser, isLoggedIn } from '../lib/auth.js'
+import { currentUser } from '../lib/auth.js'
 import { isFeatureEnabled } from '../config/features.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
 import { recordAnalyticsEvent } from '../lib/figures.js'
@@ -29,7 +29,7 @@ const cards = computed(() =>
 )
 
 onMounted(async () => {
-  if (publicContent || isLoggedIn.value) refreshFigures()
+  if (canReadFigures.value) refreshFigures()
   await nextTick()
   if (!canAnimate()) return
   animationContext = gsap.context(() => {
@@ -112,7 +112,7 @@ function trackDanceClick(danceId) {
         @pointerleave="resetTilt" @pointerdown="press"
         @pointerup="release" @pointercancel="release">
         <span class="card-count">
-          <template v-if="(isLoggedIn || publicContent) && dance.total">{{ dance.total }} {{ dance.total === 1 ? 'figura' : 'figure'
+          <template v-if="canReadFigures && dance.total">{{ dance.total }} {{ dance.total === 1 ? 'figura' : 'figure'
           }}<template v-if="dance.videos">, {{ dance.videos }} con video</template></template>
           <template v-else>{{ publicContent ? 'Nessuna figura disponibile' : 'Figure e video riservati agli iscritti' }}</template>
         </span>

@@ -1,6 +1,6 @@
 <script setup>
 import { shallowRef, watch } from 'vue'
-import { isLoggedIn } from '../lib/auth.js'
+import { canReadFigures } from '../data/danze.js'
 import { loadMedia } from '../lib/figures.js'
 
 const props = defineProps({
@@ -14,7 +14,7 @@ const loading = shallowRef(false)
 const attempt = shallowRef(0)
 
 watch(
-  [() => props.fileId, isLoggedIn, attempt],
+  [() => props.fileId, canReadFigures, attempt],
   async ([fileId, loggedIn], _, onCleanup) => {
     let active = true
     let url = ''
