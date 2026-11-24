@@ -122,7 +122,7 @@ onMounted(load)
   padding: 1.25rem;
   border: 1px solid var(--studio-line);
   border-radius: 1rem;
-  background: linear-gradient(180deg, var(--studio-panel), var(--studio-panel-soft));
+  background: var(--studio-panel);
 }
 
 .user-roles h2 {
@@ -154,12 +154,12 @@ td {
   border-bottom: 1px solid var(--studio-line);
   text-align: left;
   vertical-align: middle;
-  font-size: 0.84rem;
+  font-size: 0.875rem;
 }
 
 th {
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
@@ -176,7 +176,7 @@ tbody tr:hover {
   display: none;
   margin-top: 0.2rem;
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   overflow-wrap: anywhere;
 }
 
@@ -188,15 +188,15 @@ tbody tr:hover {
   border: 1px solid var(--studio-line);
   border-radius: 999px;
   color: var(--studio-muted);
-  font-size: 0.73rem;
+  font-size: 0.875rem;
   white-space: nowrap;
 }
 
 .role-admin,
 .role-superadmin {
-  border-color: rgba(124, 58, 237, 0.4);
+  border-color: var(--brand-text);
   background: var(--studio-accent-soft);
-  color: #ddd6fe;
+  color: var(--brand-text);
 }
 
 .role-action {
@@ -207,12 +207,12 @@ tbody tr:hover {
   background: var(--studio-raised);
   color: var(--studio-text);
   font: inherit;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   cursor: pointer;
 }
 
 .role-action:hover:not(:disabled) {
-  border-color: rgba(124, 58, 237, 0.5);
+  border-color: var(--brand-text);
 }
 
 .role-action:disabled {
@@ -236,7 +236,7 @@ tbody tr:hover {
   th,
   td {
     padding: 0.65rem 0.35rem;
-    font-size: 0.78rem;
+    font-size: 0.875rem;
   }
 
   th:nth-child(2),
@@ -251,7 +251,7 @@ tbody tr:hover {
   .role-action {
     min-height: 2.75rem;
     padding-inline: 0.45rem;
-    font-size: 0.7rem;
+    font-size: 0.875rem;
   }
 }
 </style>

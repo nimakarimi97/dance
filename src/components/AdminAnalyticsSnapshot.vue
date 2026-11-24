@@ -133,7 +133,7 @@ onMounted(load)
   padding: 1.25rem;
   border: 1px solid var(--studio-line);
   border-radius: 1rem;
-  background: linear-gradient(180deg, var(--studio-panel), var(--studio-panel-soft));
+  background: var(--studio-panel);
 }
 
 .snapshot-heading {
@@ -151,7 +151,7 @@ onMounted(load)
 .snapshot-heading p {
   margin: 0.4rem 0 0;
   color: var(--studio-muted);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 .snapshot-link,
@@ -167,14 +167,14 @@ onMounted(load)
   background: var(--studio-raised);
   color: var(--studio-text);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   text-decoration: none;
   cursor: pointer;
 }
 
 .snapshot-link:hover,
 .snapshot-retry:hover {
-  border-color: rgba(124, 58, 237, 0.55);
+  border-color: var(--brand-text);
 }
 
 .snapshot-content {
@@ -198,12 +198,12 @@ onMounted(load)
   gap: 1rem;
   padding: 0.65rem 0.75rem;
   border-radius: 0.65rem;
-  background: rgba(9, 13, 26, 0.55);
+  background: var(--studio-bg);
 }
 
 .snapshot-stats span {
   color: var(--studio-muted);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 .snapshot-stats strong {
@@ -216,7 +216,7 @@ onMounted(load)
   padding: 0.8rem 0.8rem 0.35rem;
   border: 1px solid var(--studio-line);
   border-radius: 0.75rem;
-  background: rgba(9, 13, 26, 0.35);
+  background: var(--studio-bg);
 }
 
 .snapshot-legend {
@@ -224,7 +224,7 @@ onMounted(load)
   flex-wrap: wrap;
   gap: 0.4rem 0.8rem;
   color: var(--studio-muted);
-  font-size: 0.7rem;
+  font-size: 0.875rem;
 }
 
 .snapshot-legend span::before {
@@ -237,9 +237,9 @@ onMounted(load)
   background: currentColor;
 }
 
-.legend-views { color: #a78bfa; }
-.legend-clicks { color: #22d3ee; }
-.legend-admin { color: #fbbf24; }
+.legend-views { color: var(--brand-text); }
+.legend-clicks { color: var(--info); }
+.legend-admin { color: var(--warning); }
 
 .snapshot-chart {
   display: grid;
@@ -263,7 +263,7 @@ onMounted(load)
 .day-total,
 .day-label {
   color: var(--studio-muted);
-  font-size: 0.63rem;
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -282,7 +282,7 @@ onMounted(load)
   min-height: 3px;
   overflow: hidden;
   border-radius: 0.35rem 0.35rem 0 0;
-  background: rgba(148, 163, 184, 0.12);
+  background: var(--line);
 }
 
 .bar-stack span {
@@ -290,19 +290,19 @@ onMounted(load)
   flex: 0 0 auto;
 }
 
-.bar-admin { background: #fbbf24; }
-.bar-clicks { background: #22d3ee; }
-.bar-views { background: #a78bfa; }
+.bar-admin { background: var(--warning); }
+.bar-clicks { background: var(--info); }
+.bar-views { background: var(--brand-text); }
 
 .snapshot-error,
 .snapshot-loading {
   margin: 1rem 0 0;
   color: var(--studio-muted);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
 .snapshot-error {
-  color: #fcd34d;
+  color: var(--warning);
 }
 
 .snapshot-retry {

@@ -207,7 +207,7 @@ Dopo: {{ entry.after }}</pre><small>Operazione: {{ entry.operationId }}</small><
 .section-label { margin-bottom: 1rem; }
 .operation-field { display: grid; gap: .5rem; font-size: .9rem; }
 .import-form, .bulk-edit { display: grid; gap: .75rem; }
-.operation-field input, .operation-field select, .operation-field textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; padding: .75rem; border: 1px solid var(--studio-line); border-radius: .5rem; background: var(--studio-panel-soft); color: inherit; font: inherit; }
+.operation-field input, .operation-field select, .operation-field textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; padding: .75rem; border: 1px solid var(--input-line); border-radius: .5rem; background: var(--studio-panel-soft); color: inherit; font: inherit; }
 .operation-field textarea { resize: vertical; font-family: monospace; }
 .operation-button { min-height: 44px; padding: .75rem 1rem; border: 1px solid var(--studio-line); border-radius: .5rem; color: inherit; background: var(--studio-panel-soft); font: inherit; cursor: pointer; justify-self: start; }
 .operation-button:hover:not(:disabled) { border-color: var(--studio-accent); }
@@ -231,7 +231,7 @@ Dopo: {{ entry.after }}</pre><small>Operazione: {{ entry.operationId }}</small><
 .audit-controls .operation-field { flex: 1; min-width: 8rem; }
 .audit-list li { overflow-wrap: anywhere; }
 .operation-error, .row-errors { color: var(--studio-warning); line-height: 1.5; }
-.operation-status { color: var(--studio-accent); }
+.operation-status { color: var(--brand-text); }
 .row-errors { padding-left: 1.25rem; }
 @media (max-width: 600px) {
   .figure-operations { padding: 1rem; }

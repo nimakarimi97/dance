@@ -17,6 +17,7 @@ import { computed, onMounted, shallowRef } from 'vue'
 import { dances, figures } from '../data/danze.js'
 import { buildEventTimeline, summarizeViews } from '../lib/analytics.js'
 import { listAnalyticsEvents } from '../lib/figures.js'
+import { isDarkMode } from '../lib/theme.js'
 
 ChartJS.register(
   CategoryScale, LinearScale, LineElement, PointElement, BarElement,
@@ -35,6 +36,9 @@ const loading = shallowRef(true)
 const error = shallowRef('')
 const range = shallowRef(30)
 const now = shallowRef(Date.now())
+const chartColors = computed(() => isDarkMode.value
+  ? { text: '#b0bac3', line: '#49545e', panel: '#1c2227', rose: '#ff9abb', mint: '#7ce0b3', cyan: '#83d9ed', gold: '#f1c56c' }
+  : { text: '#56616b', line: '#cbd2d8', panel: '#ffffff', rose: '#b92350', mint: '#16724f', cyan: '#176d87', gold: '#875700' })
 
 const periodEvents = computed(() => {
   if (!events.value) return []
@@ -65,7 +69,7 @@ const danceChartData = computed(() => ({
   labels: stats.value?.byDance.map((item) => item.nome) ?? [],
   datasets: [{
     data: stats.value?.byDance.map((item) => item.views) ?? [],
-    backgroundColor: ['#a78bfa', '#22d3ee'],
+    backgroundColor: [chartColors.value.rose, chartColors.value.cyan],
     borderRadius: 4,
     barThickness: 14,
   }],
@@ -74,7 +78,7 @@ const styleChartData = computed(() => ({
   labels: stats.value?.byStyle.slice(0, 6).map((item) => item.nome) ?? [],
   datasets: [{
     data: stats.value?.byStyle.slice(0, 6).map((item) => item.views) ?? [],
-    backgroundColor: '#34d399',
+    backgroundColor: chartColors.value.mint,
     borderRadius: 4,
     barThickness: 12,
   }],
@@ -85,19 +89,19 @@ const trendChartData = computed(() => ({
     {
       label: 'Visite pagina',
       data: timeline.value.pageViews,
-      borderColor: '#a78bfa',
+      borderColor: chartColors.value.rose,
       backgroundColor: 'rgba(167, 139, 250, 0.13)',
       borderWidth: 2,
       fill: true,
       tension: 0.32,
       pointRadius: timeline.value.pageViews.length > 30 ? 0 : 2,
       pointHoverRadius: 5,
-      pointBackgroundColor: '#e2e8f0',
+      pointBackgroundColor: chartColors.value.rose,
     },
     {
       label: 'Click',
       data: timeline.value.clicks,
-      borderColor: '#22d3ee',
+      borderColor: chartColors.value.cyan,
       backgroundColor: 'transparent',
       borderWidth: 2,
       tension: 0.32,
@@ -107,7 +111,7 @@ const trendChartData = computed(() => ({
     {
       label: 'Azioni admin',
       data: timeline.value.adminActions,
-      borderColor: '#fbbf24',
+      borderColor: chartColors.value.gold,
       backgroundColor: 'transparent',
       borderWidth: 2,
       tension: 0.32,
@@ -132,12 +136,12 @@ const eventBreakdownData = computed(() => ({
   datasets: [{
     data: stats.value?.byEventType.map((item) => item.count) ?? [],
     backgroundColor: ['#a78bfa', '#22d3ee', '#38bdf8', '#818cf8', '#64748b', '#34d399', '#fbbf24', '#fb7185', '#f97316'],
-    borderColor: '#101829',
+    borderColor: chartColors.value.panel,
     borderWidth: 3,
   }],
 }))
 
-const trendOptions = {
+const trendOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: false,
@@ -146,7 +150,7 @@ const trendOptions = {
     legend: {
       display: true,
       position: 'bottom',
-      labels: { color: '#94a3b8', usePointStyle: true, boxWidth: 7, padding: 18 },
+      labels: { color: chartColors.value.text, usePointStyle: true, boxWidth: 7, padding: 18 },
     },
     tooltip: {
       displayColors: false,
@@ -159,29 +163,29 @@ const trendOptions = {
     x: {
       grid: { display: false },
       border: { display: false },
-      ticks: { color: '#94a3b8', maxTicksLimit: 8, maxRotation: 0 },
+      ticks: { color: chartColors.value.text, maxTicksLimit: 8, maxRotation: 0 },
     },
     y: {
       beginAtZero: true,
       border: { display: false, dash: [3, 5] },
-      grid: { color: 'rgba(148, 163, 184, 0.12)' },
-      ticks: { color: '#94a3b8', precision: 0, maxTicksLimit: 5 },
+      grid: { color: chartColors.value.line },
+      ticks: { color: chartColors.value.text, precision: 0, maxTicksLimit: 5 },
     },
   },
-}
+}))
 
-const eventBreakdownOptions = {
+const eventBreakdownOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: false,
   plugins: {
     legend: {
       position: 'bottom',
-      labels: { color: '#94a3b8', usePointStyle: true, boxWidth: 8, padding: 14 },
+      labels: { color: chartColors.value.text, usePointStyle: true, boxWidth: 8, padding: 14 },
     },
     tooltip: { displayColors: false },
   },
-}
+}))
 
 function barOptions(maxTicksLimit) {
   return {
@@ -202,20 +206,20 @@ function barOptions(maxTicksLimit) {
       x: {
         beginAtZero: true,
         border: { display: false },
-        grid: { color: 'rgba(148, 163, 184, 0.12)' },
-        ticks: { color: '#94a3b8', precision: 0, maxTicksLimit },
+        grid: { color: chartColors.value.line },
+        ticks: { color: chartColors.value.text, precision: 0, maxTicksLimit },
       },
       y: {
         border: { display: false },
         grid: { display: false },
-        ticks: { color: '#e2e8f0' },
+        ticks: { color: chartColors.value.text },
       },
     },
   }
 }
 
-const danceOptions = barOptions(4)
-const styleOptions = barOptions(4)
+const danceOptions = computed(() => barOptions(4))
+const styleOptions = computed(() => barOptions(4))
 
 function number(value) {
   return new Intl.NumberFormat('it-IT').format(value)
@@ -445,16 +449,16 @@ onMounted(load)
 
 <style scoped>
 .analytics {
-  --analytics-panel: #101829;
-  --analytics-raised: #152037;
-  --analytics-line: rgba(148, 163, 184, 0.2);
-  --analytics-text: #e2e8f0;
-  --analytics-muted: #94a3b8;
+  --analytics-panel: var(--ink-2);
+  --analytics-raised: var(--ink-3);
+  --analytics-line: var(--line);
+  --analytics-text: var(--text);
+  --analytics-muted: var(--muted);
   min-width: 0;
   padding: clamp(1.25rem, 3vw, 2rem);
   border: 1px solid var(--analytics-line);
   border-radius: 1rem;
-  background: rgba(16, 24, 41, 0.96);
+  background: var(--ink-2);
   color: var(--analytics-text);
 }
 
@@ -474,7 +478,7 @@ onMounted(load)
 
 .analytics-kicker {
   margin: 0 0 0.35rem;
-  color: #c4b5fd;
+  color: var(--brand-text);
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -510,8 +514,8 @@ onMounted(load)
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.12);
+  background: var(--success);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 12%, var(--ink-2));
 }
 
 .period-control {
@@ -554,7 +558,7 @@ onMounted(load)
 }
 
 .period-options button.active {
-  background: #7c3aed;
+  background: var(--brand);
   color: #fff;
   font-weight: 700;
 }
@@ -577,8 +581,8 @@ onMounted(load)
 }
 
 .kpi-primary {
-  background: linear-gradient(145deg, rgba(124, 58, 237, 0.22), #101829 78%);
-  border-color: rgba(124, 58, 237, 0.35);
+  background: var(--brand-soft);
+  border-color: var(--brand-text);
 }
 
 .kpi-icon {
@@ -587,8 +591,8 @@ onMounted(load)
   height: 2.35rem;
   place-items: center;
   border-radius: 10px;
-  background: rgba(196, 181, 253, 0.14);
-  color: #c4b5fd;
+  background: var(--brand-soft);
+  color: var(--brand-text);
 }
 
 .kpi-icon svg {
@@ -601,10 +605,10 @@ onMounted(load)
   stroke-width: 1.7;
 }
 
-.kpi-icon-rose { background: rgba(251, 113, 133, 0.13); color: #fda4af; }
-.kpi-icon-mint { background: rgba(52, 211, 153, 0.13); color: #6ee7b7; }
-.kpi-icon-gold { background: rgba(245, 158, 11, 0.13); color: #fcd34d; }
-.kpi-icon-cyan { background: rgba(34, 211, 238, 0.13); color: #67e8f9; }
+.kpi-icon-rose { background: var(--brand-soft); color: var(--brand-text); }
+.kpi-icon-mint { background: color-mix(in srgb, var(--success) 12%, var(--ink-2)); color: var(--success); }
+.kpi-icon-gold { background: color-mix(in srgb, var(--warning) 12%, var(--ink-2)); color: var(--warning); }
+.kpi-icon-cyan { background: color-mix(in srgb, var(--info) 12%, var(--ink-2)); color: var(--info); }
 
 .kpi-card p {
   margin: 1rem 0 0.15rem;
@@ -706,7 +710,7 @@ onMounted(load)
   align-items: center;
   gap: 0.6rem;
   min-height: 2.8rem;
-  border-bottom: 1px solid rgba(169, 184, 207, 0.12);
+  border-bottom: 1px solid var(--line);
 }
 
 .ranking-list li:last-child {
@@ -714,7 +718,7 @@ onMounted(load)
 }
 
 .rank-number {
-  color: #c4b5fd;
+  color: var(--brand-text);
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
 }
@@ -745,7 +749,7 @@ onMounted(load)
 }
 
 .analytics-error {
-  color: #ffb6c4;
+  color: var(--brand-text);
 }
 
 .retry-button {

@@ -1,8 +1,8 @@
 <script setup>
-import { computed, defineAsyncComponent, nextTick, shallowRef, useTemplateRef } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { computed, defineAsyncComponent, nextTick, shallowRef, useTemplateRef, watch } from 'vue'
+import { onBeforeRouteUpdate, RouterLink, useRoute, useRouter } from 'vue-router'
 import { currentUser, isAdmin, isSuperAdmin, signOut } from '../lib/auth.js'
-import { dances, figures, refreshFigures, useFigureCatalog } from '../data/danze.js'
+import { figures, refreshFigures, useFigureCatalog } from '../data/danze.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
 import { recordAnalyticsEvent } from '../lib/figures.js'
 import DashboardCatalog from '../components/DashboardCatalog.vue'
@@ -10,6 +10,7 @@ import AdminUserRoles from '../components/AdminUserRoles.vue'
 import FigureEditor from '../components/FigureEditor.vue'
 import StudioIcon from '../components/StudioIcon.vue'
 import PersonalPractice from '../components/PersonalPractice.vue'
+import DashboardNavigation from '../components/DashboardNavigation.vue'
 
 const AdminAnalytics = defineAsyncComponent(() => import('../components/AdminAnalytics.vue'))
 const AdminAnalyticsSnapshot = defineAsyncComponent(() => import('../components/AdminAnalyticsSnapshot.vue'))
@@ -23,10 +24,9 @@ const editing = shallowRef(false)
 const selectedFigure = shallowRef(null)
 const savedId = shallowRef('')
 const videoFilter = shallowRef('all')
-const createButton = useTemplateRef('create-button')
 const sectionHeading = useTemplateRef('section-heading')
 const personalPractice = useTemplateRef('personal-practice')
-const activeSection = shallowRef(route.query.sezione === 'pratica' ? 'pratica' : 'panoramica')
+const activeSection = shallowRef(isAdmin.value ? 'panoramica' : 'pratica')
 const sectionTitles = {
   panoramica: 'Panoramica',
   pratica: 'La mia pratica',
@@ -36,7 +36,8 @@ const sectionTitles = {
   utenti: 'Utenti',
   account: 'Il mio account',
 }
-const sectionTitle = computed(() => sectionTitles[activeSection.value])
+const sectionTitle = computed(() => activeSection.value === 'catalogo' && !isAdmin.value
+  ? 'Esplora figure' : sectionTitles[activeSection.value])
 const sectionDescriptions = {
   panoramica: 'Panoramica del repertorio e progressi video.',
   pratica: 'Preferiti, liste personali e progressi di apprendimento.',
@@ -47,20 +48,21 @@ const sectionDescriptions = {
   account: 'Impostazioni personali e sicurezza account.',
 }
 const sectionDescription = computed(
-  () => sectionDescriptions[activeSection.value] || 'Gestisci il tuo spazio personale.',
+  () => activeSection.value === 'catalogo' && !isAdmin.value
+    ? 'Trova una figura e apri il video per esercitarti.'
+    : sectionDescriptions[activeSection.value] || 'Gestisci il tuo spazio personale.',
 )
 const sectionItems = computed(() => {
   const items = [
     { id: 'panoramica', label: 'Panoramica', icon: 'grid' },
     { id: 'pratica', label: 'La mia pratica', icon: 'music' },
-    { id: 'catalogo', label: 'Catalogo', icon: 'library' },
+    { id: 'catalogo', label: isAdmin.value ? 'Catalogo' : 'Esplora figure', icon: 'library' },
   ]
   if (isAdmin.value) items.push(
     { id: 'operazioni', label: 'Import e audit', icon: 'edit' },
     { id: 'visualizzazioni', label: 'Analytics', icon: 'video' },
   )
   if (isSuperAdmin.value) items.push({ id: 'utenti', label: 'Utenti', icon: 'user' })
-  items.push({ id: 'account', label: 'Account', icon: 'shield' })
   return items
 })
 let editorTrigger = null
@@ -80,22 +82,26 @@ const missingVideo = computed(() => figures.value.length - withVideo.value)
 const videoCoverage = computed(() =>
   figures.value.length ? Math.round((withVideo.value / figures.value.length) * 100) : 0,
 )
-const danceSummary = computed(() =>
-  Object.values(dances).map((dance) => ({
-    ...dance,
-    total: figures.value.filter((figure) => figure.danza === dance.id).length,
-    videos: figures.value.filter((figure) => figure.danza === dance.id && (figure.videoFileId || figure.youtubeId))
-      .length,
-  })),
-)
 const joinedDate = computed(() => {
   const date = currentUser.value?.registration
   return date ? new Intl.DateTimeFormat('it', { month: 'long', year: 'numeric' }).format(new Date(date)) : null
 })
 
 async function showSection(id) {
-  if (activeSection.value === 'pratica' && id !== 'pratica' && personalPractice.value?.canLeave() === false) return
-  if (activeSection.value !== id && currentUser.value?.$id) {
+  if (id === activeSection.value) return
+  await router.replace({ query: { ...route.query, sezione: id } })
+}
+
+onBeforeRouteUpdate((to) => {
+  if (to.query.sezione !== route.query.sezione && activeSection.value === 'pratica') {
+    return personalPractice.value?.canLeave() !== false
+  }
+})
+watch(() => route.query.sezione, async (section) => {
+  const id = section === 'account' || sectionItems.value.some(item => item.id === section)
+    ? section : isAdmin.value ? 'panoramica' : 'pratica'
+  if (id === activeSection.value) return
+  if (currentUser.value?.$id) {
     recordAnalyticsEvent({
       eventType: ANALYTICS_EVENTS.DASHBOARD_NAV_CLICK,
       eventTarget: id,
@@ -106,7 +112,7 @@ async function showSection(id) {
   await nextTick()
   window.scrollTo({ top: 0 })
   sectionHeading.value?.focus({ preventScroll: true })
-}
+}, { immediate: true })
 
 function openEditor(figure = null) {
   if (!isAdmin.value) return
@@ -119,7 +125,7 @@ function openEditor(figure = null) {
 async function closeEditor() {
   editing.value = false
   await nextTick()
-  const target = editorTrigger?.isConnected ? editorTrigger : createButton.value
+  const target = editorTrigger?.isConnected ? editorTrigger : sectionHeading.value
   target?.focus({ preventScroll: true })
 }
 
@@ -159,71 +165,17 @@ async function signOutUser() {
 
 <template>
   <main class="dashboard studio-theme">
-    <aside class="workspace-rail" aria-label="Il tuo spazio">
-      <div class="workspace-name">
-        <span class="workspace-monogram">
-          <StudioIcon name="music" />
-        </span>
-        <div><strong>Il tuo studio</strong><span>Salsa &amp; Bachata</span></div>
-      </div>
-      <nav class="workspace-nav" aria-label="Navigazione dashboard">
-        <a
-          v-for="item in sectionItems"
-          :key="item.id"
-          :href="`#${item.id}`"
-          :class="{ selected: activeSection === item.id }"
-          :aria-current="activeSection === item.id ? 'page' : undefined"
-          @click.prevent="showSection(item.id)"
-        >
-          <StudioIcon :name="item.icon" /> {{ item.label }}
-          <span v-if="item.id === 'catalogo' && !loading && !error" class="nav-count">{{ figures.length }}</span>
-        </a>
-      </nav>
-      <div class="rail-note">
-        <StudioIcon name="shield" />
-        <p>{{ isAdmin ? 'Spazio amministratore' : 'Spazio personale' }}<span>I tuoi contenuti, al sicuro.</span></p>
-      </div>
-      <a href="#account" class="rail-person" @click.prevent="showSection('account')"><span class="avatar small">{{
-        initials }}</span>
-        <div>
-          <strong>{{ currentUser?.name || 'Il tuo account' }}</strong><span>{{
-            isAdmin ? 'Amministratore' : 'Ballerino'
-          }}</span>
-        </div>
-      </a>
-    </aside>
+    <DashboardNavigation :items="sectionItems" :active="activeSection"
+      :count="!loading && !error ? figures.length : null" @select="showSection" />
 
     <div class="workspace-main">
       <header class="workspace-header">
         <div>
-          <p class="greeting">Dashboard · Bentornato, {{ firstName }}</p>
+          <p class="greeting">Bentornato, {{ firstName }}</p>
           <h1 ref="section-heading" tabindex="-1">{{ sectionTitle }}</h1>
           <p class="header-description">{{ sectionDescription }}</p>
         </div>
-        <button v-if="isAdmin" ref="create-button" type="button" class="studio-button primary" @click="openEditor()">
-          <StudioIcon name="plus" /> Nuova figura
-        </button>
-        <RouterLink v-else :to="{ name: 'danza', params: { danza: 'salsa' } }" class="studio-button primary">Esplora le
-          figure
-          <StudioIcon name="arrow" />
-        </RouterLink>
       </header>
-
-      <nav class="section-tabs" aria-label="Sezioni dashboard">
-        <button
-          v-for="item in sectionItems"
-          :key="item.id"
-          type="button"
-          :class="{ active: activeSection === item.id }"
-          :aria-pressed="activeSection === item.id"
-          :aria-current="activeSection === item.id ? 'page' : undefined"
-          @click="showSection(item.id)"
-        >
-          <StudioIcon :name="item.icon" />
-          <span>{{ item.label }}</span>
-          <span v-if="item.id === 'catalogo' && !loading && !error" class="tab-badge">{{ figures.length }}</span>
-        </button>
-      </nav>
 
       <div v-if="savedId" class="save-notice" role="status">
         <StudioIcon name="check" /><span>Figura salvata.
@@ -265,32 +217,6 @@ async function signOutUser() {
         </section>
 
         <div class="overview-grid">
-          <section class="repertoire-panel" aria-labelledby="repertoire-title">
-            <div class="panel-heading">
-              <h2 id="repertoire-title">Due ritmi, il tuo repertorio</h2>
-              <StudioIcon name="music" />
-            </div>
-            <div class="dance-overview">
-              <RouterLink v-for="dance in danceSummary" :key="dance.id"
-                :to="{ name: 'danza', params: { danza: dance.id } }" class="dance-summary" :data-dance="dance.id">
-                <div class="dance-summary-top">
-                  <span class="dance-initial" aria-hidden="true">{{ dance.nome[0] }}</span>
-                  <StudioIcon name="arrow" />
-                </div>
-                <h3>{{ dance.nome }}</h3>
-                <p>
-                  {{
-                    loading
-                      ? 'Caricamento catalogo…'
-                      : error
-                        ? 'Dati non disponibili'
-                        : `${dance.total} figure, ${dance.videos} con video`
-                  }}
-                </p>
-                <span class="dance-style-list">{{dance.stili.map((style) => style.nome).join(' / ')}}</span>
-              </RouterLink>
-            </div>
-          </section>
           <section class="coverage-panel" aria-labelledby="coverage-title">
             <div class="panel-heading">
               <h2 id="coverage-title">Il catalogo prende forma</h2>
@@ -364,19 +290,6 @@ async function signOutUser() {
 
 <style scoped>
 .dashboard {
-  --studio-bg: #090d1a;
-  --studio-panel: #101829;
-  --studio-panel-soft: #0f1626;
-  --studio-raised: #152037;
-  --studio-line: rgba(148, 163, 184, 0.2);
-  --studio-text: #e2e8f0;
-  --studio-muted: #94a3b8;
-  --studio-accent: #7c3aed;
-  --studio-accent-2: #22d3ee;
-  --studio-accent-soft: rgba(124, 58, 237, 0.18);
-  --studio-hover: #111c31;
-  --studio-success: #34d399;
-  --studio-warning: #f59e0b;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1.4rem;
@@ -385,22 +298,6 @@ async function signOutUser() {
   padding: 1.5rem 0 1rem;
   color: var(--studio-text);
   position: relative;
-}
-
-.dashboard::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  background:
-    radial-gradient(circle at 15% -20%, rgba(124, 58, 237, 0.25), transparent 45%),
-    radial-gradient(circle at 80% 0%, rgba(34, 211, 238, 0.16), transparent 40%);
-}
-
-.workspace-rail {
-  display: none;
-  min-width: 0;
 }
 
 .workspace-main {
@@ -415,18 +312,14 @@ async function signOutUser() {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 1.25rem;
-  border: 1px solid var(--studio-line);
-  border-radius: 1rem;
-  background: linear-gradient(160deg, rgba(16, 24, 41, 0.97), rgba(11, 17, 32, 0.94));
-  box-shadow: 0 24px 48px rgba(2, 6, 23, 0.34);
+  padding: 0.5rem 0 1rem;
   scroll-margin-top: 5rem;
 }
 
 .greeting {
   margin: 0 0 0.5rem;
-  color: #c4b5fd;
-  font-size: 0.75rem;
+  color: var(--brand-text);
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -442,7 +335,7 @@ async function signOutUser() {
 .header-description {
   margin: 0.6rem 0 0;
   color: var(--studio-muted);
-  font-size: 0.88rem;
+  font-size: 1rem;
   max-width: 42ch;
 }
 
@@ -465,9 +358,9 @@ async function signOutUser() {
 
 .studio-button.primary {
   border-color: transparent;
-  background: linear-gradient(135deg, var(--studio-accent), #2563eb);
+  background: var(--brand);
   color: #f8fafc;
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.3);
+  box-shadow: none;
 }
 
 .studio-button.primary:hover {
@@ -482,7 +375,7 @@ async function signOutUser() {
 
 .studio-button.secondary:hover {
   border-color: rgba(148, 163, 184, 0.5);
-  background: #182746;
+  background: var(--studio-hover);
 }
 
 .studio-button:disabled {
@@ -490,57 +383,15 @@ async function signOutUser() {
   cursor: wait;
 }
 
-.section-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.section-tabs button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 2.5rem;
-  border: 1px solid var(--studio-line);
-  border-radius: 999px;
-  padding: 0.4rem 0.85rem;
-  background: var(--studio-panel-soft);
-  color: var(--studio-muted);
-  font: inherit;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.section-tabs button:hover {
-  border-color: rgba(148, 163, 184, 0.5);
-  color: var(--studio-text);
-}
-
-.section-tabs button.active {
-  border-color: transparent;
-  background: linear-gradient(135deg, var(--studio-accent-soft), rgba(34, 211, 238, 0.16));
-  color: #ddd6fe;
-}
-
-.tab-badge {
-  min-width: 1.4rem;
-  padding: 0.1rem 0.35rem;
-  border-radius: 999px;
-  border: 1px solid var(--studio-line);
-  color: var(--studio-text);
-  font-size: 0.68rem;
-  text-align: center;
-}
-
 .save-notice {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.65rem 1rem;
-  border: 1px solid rgba(52, 211, 153, 0.45);
+  border: 1px solid color-mix(in srgb, var(--success) 12%, var(--ink-2));
   border-radius: 0.75rem;
-  background: rgba(16, 185, 129, 0.08);
-  color: #6ee7b7;
+  background: color-mix(in srgb, var(--success) 12%, var(--ink-2));
+  color: var(--success);
   font-size: 0.88rem;
 }
 
@@ -560,7 +411,7 @@ async function signOutUser() {
 }
 
 .save-notice a {
-  color: #a7f3d0;
+  color: var(--success);
 }
 
 .metrics {
@@ -577,7 +428,7 @@ async function signOutUser() {
   padding: 1rem;
   border: 1px solid var(--studio-line);
   border-radius: 1rem;
-  background: linear-gradient(180deg, var(--studio-panel), var(--studio-panel-soft));
+  background: var(--studio-panel);
 }
 
 .metric-icon {
@@ -586,26 +437,26 @@ async function signOutUser() {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  border: 1px solid rgba(124, 58, 237, 0.4);
+  border: 1px solid var(--brand-text);
   border-radius: 0.7rem;
-  color: #c4b5fd;
-  background: rgba(124, 58, 237, 0.15);
+  color: var(--brand-text);
+  background: var(--brand-soft);
 }
 
 .metric-icon.mint {
-  color: #6ee7b7;
-  border-color: rgba(16, 185, 129, 0.4);
-  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 12%, var(--ink-2));
+  background: color-mix(in srgb, var(--success) 12%, var(--ink-2));
 }
 
 .metric-icon.amber {
-  color: #fcd34d;
-  border-color: rgba(245, 158, 11, 0.4);
-  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 12%, var(--ink-2));
+  background: color-mix(in srgb, var(--warning) 12%, var(--ink-2));
 }
 
 .metric p {
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--studio-muted);
   margin: 0 0 0.4rem;
 }
@@ -620,18 +471,17 @@ async function signOutUser() {
 
 .overview-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.9rem;
 }
 
-.repertoire-panel,
 .coverage-panel {
   border: 1px solid var(--studio-line);
   border-radius: 1rem;
   padding: 1.25rem;
   background: var(--studio-panel);
   min-width: 0;
-  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.26);
+  box-shadow: var(--shadow);
 }
 
 .panel-heading {
@@ -649,65 +499,6 @@ async function signOutUser() {
 
 .panel-heading>.studio-icon {
   color: var(--studio-muted);
-}
-
-.dance-overview {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 0.9rem;
-  border: 1px solid var(--studio-line);
-  border-radius: 0.9rem;
-  overflow: hidden;
-}
-
-.dance-summary {
-  text-decoration: none;
-  min-width: 0;
-  padding: 0.9rem 1rem;
-  background: var(--studio-panel-soft);
-  transition: background-color 0.2s ease;
-}
-
-.dance-summary+.dance-summary {
-  border-left: 1px solid var(--studio-line);
-}
-
-.dance-summary-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--studio-muted);
-}
-
-.dance-initial {
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1;
-  color: #ddd6fe;
-}
-
-.dance-summary h3 {
-  font-size: 1rem;
-  margin: 0.55rem 0 0;
-}
-
-.dance-summary p {
-  margin: 0.4rem 0;
-  color: var(--studio-muted);
-  font-size: 0.78rem;
-}
-
-.dance-style-list {
-  font-size: 0.72rem;
-  color: var(--studio-muted);
-}
-
-.dance-summary:hover h3 {
-  color: #c4b5fd;
-}
-
-.dance-summary:hover {
-  background: #132039;
 }
 
 .coverage-value {
@@ -728,7 +519,7 @@ async function signOutUser() {
 
 .coverage-value span {
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .coverage-panel progress {
@@ -757,7 +548,7 @@ async function signOutUser() {
 }
 
 .coverage-panel>p {
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   color: var(--studio-muted);
   line-height: 1.6;
   margin: 0.8rem 0 0.25rem;
@@ -771,9 +562,9 @@ async function signOutUser() {
   padding: 0.5rem 0;
   min-height: 2.75rem;
   background: none;
-  color: #c4b5fd;
+  color: var(--brand-text);
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   text-align: left;
 }
 
@@ -791,7 +582,7 @@ async function signOutUser() {
   padding: 1.5rem;
   border: 1px solid var(--studio-line);
   border-radius: 1rem;
-  background: linear-gradient(180deg, var(--studio-panel), var(--studio-panel-soft));
+  background: var(--studio-panel);
   scroll-margin-top: 5rem;
 }
 
@@ -812,10 +603,10 @@ async function signOutUser() {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  border: 1px solid rgba(124, 58, 237, 0.45);
+  border: 1px solid var(--brand-text);
   border-radius: 50%;
-  color: #ddd6fe;
-  background: rgba(124, 58, 237, 0.16);
+  color: var(--brand-text);
+  background: var(--brand-soft);
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -823,7 +614,7 @@ async function signOutUser() {
 .avatar.small {
   width: 2.25rem;
   height: 2.25rem;
-  font-size: 0.7rem;
+  font-size: 0.875rem;
 }
 
 .account-person h2 {
@@ -833,7 +624,7 @@ async function signOutUser() {
 }
 
 .account-person p {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   margin: 0.2rem 0 0.5rem;
   color: var(--studio-muted);
   overflow-wrap: anywhere;
@@ -845,7 +636,7 @@ async function signOutUser() {
   flex-wrap: wrap;
   gap: 0.35rem;
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .account-role .studio-icon {
@@ -855,7 +646,7 @@ async function signOutUser() {
 
 .account-error {
   flex-basis: 100%;
-  color: #fcd34d;
+  color: var(--warning);
   font-size: 0.9rem;
 }
 
@@ -864,144 +655,6 @@ async function signOutUser() {
     grid-template-columns: 248px minmax(0, 1fr);
     gap: 1.3rem;
     padding-top: 2rem;
-  }
-
-  .section-tabs {
-    display: none;
-  }
-
-  .workspace-rail {
-    display: flex;
-    flex-direction: column;
-    align-self: start;
-    position: sticky;
-    top: 5.5rem;
-    min-height: min(720px, calc(100dvh - 8rem));
-    padding: 1rem;
-    border: 1px solid var(--studio-line);
-    border-radius: 1rem;
-    background: linear-gradient(180deg, var(--studio-panel), var(--studio-panel-soft));
-  }
-
-  .workspace-name {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-  }
-
-  .workspace-monogram {
-    display: grid;
-    place-items: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    border: 1px solid var(--studio-line);
-    border-radius: 0.7rem;
-    color: #c4b5fd;
-    background: rgba(124, 58, 237, 0.14);
-  }
-
-  .workspace-name strong {
-    display: block;
-    font-size: 0.95rem;
-  }
-
-  .workspace-name div>span {
-    display: block;
-    margin-top: 0.15rem;
-    color: var(--studio-muted);
-    font-size: 0.75rem;
-  }
-
-  .workspace-nav {
-    display: grid;
-    gap: 0.35rem;
-    margin-top: 1.6rem;
-  }
-
-  .workspace-nav a {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    min-height: 2.75rem;
-    padding: 0.6rem;
-    border-radius: 0.7rem;
-    border: 1px solid transparent;
-    color: var(--studio-muted);
-    text-decoration: none;
-    font-size: 0.82rem;
-  }
-
-  .workspace-nav a.selected {
-    border-color: rgba(124, 58, 237, 0.35);
-    background: var(--studio-accent-soft);
-    color: #ddd6fe;
-  }
-
-  .workspace-nav a:hover {
-    border-color: var(--studio-line);
-    color: var(--studio-text);
-    background: rgba(15, 23, 42, 0.7);
-  }
-
-  .nav-count {
-    margin-left: auto;
-    padding: 0.1rem 0.4rem;
-    border: 1px solid var(--studio-line);
-    border-radius: 999px;
-    font-size: 0.75rem;
-  }
-
-  .rail-note {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.6rem;
-    margin: auto 0 1rem;
-    padding-top: 1.5rem;
-    color: var(--studio-muted);
-  }
-
-  .rail-note .studio-icon {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  .rail-note p {
-    margin: 0;
-    font-size: 0.75rem;
-    line-height: 1.5;
-  }
-
-  .rail-note p span {
-    display: block;
-    margin-top: 0.3rem;
-  }
-
-  .rail-person {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.85rem 0 0;
-    border-top: 1px solid var(--studio-line);
-    margin-top: 0.8rem;
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .rail-person>div {
-    min-width: 0;
-  }
-
-  .rail-person strong {
-    display: block;
-    font-size: 0.75rem;
-    overflow-wrap: anywhere;
-  }
-
-  .rail-person div>span {
-    display: block;
-    font-size: 0.75rem;
-    margin-top: 0.2rem;
-    color: var(--studio-muted);
   }
 }
 
@@ -1016,48 +669,28 @@ async function signOutUser() {
   }
 
   .workspace-header {
-    padding: 1rem;
+    padding: 0.5rem 0;
     align-items: flex-start;
     flex-wrap: wrap;
     gap: 1.1rem;
   }
 
-  .workspace-header .studio-button {
-    width: 100%;
-  }
-
-  .section-tabs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.45rem;
-  }
-
-  .section-tabs button {
-    justify-content: center;
-    min-width: 0;
-    padding-inline: 0.6rem;
-  }
-
-  .section-tabs button:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
-
   .header-description {
-    font-size: 0.85rem;
+    font-size: 1rem;
   }
 
   .metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 0.5rem;
   }
 
   .metric {
-    display: grid;
+    display: flex;
     align-content: start;
     justify-items: start;
     gap: 0.55rem;
     min-width: 0;
-    padding: 0.75rem 0.65rem;
+    padding: 1rem;
     border-radius: 0.8rem;
   }
 
@@ -1071,7 +704,7 @@ async function signOutUser() {
   .metric p {
     min-height: auto;
     margin-bottom: 0;
-    font-size: 0.68rem;
+    font-size: 0.95rem;
     line-height: 1.35;
   }
 
@@ -1084,18 +717,8 @@ async function signOutUser() {
     gap: 1rem;
   }
 
-  .repertoire-panel,
   .coverage-panel {
     padding: 1rem;
-  }
-
-  .dance-overview {
-    grid-template-columns: 1fr;
-  }
-
-  .dance-summary + .dance-summary {
-    border-left: 0;
-    border-top: 1px solid var(--studio-line);
   }
 
   .coverage-value {
@@ -1117,26 +740,4 @@ async function signOutUser() {
   }
 }
 
-@media (max-width: 380px) {
-  .metrics {
-    gap: 0.35rem;
-  }
-
-  .metric {
-    padding: 0.65rem 0.5rem;
-  }
-
-  .metric-icon {
-    display: none;
-  }
-
-  .metric p {
-    font-size: 0.65rem;
-  }
-
-  .section-tabs button {
-    gap: 0.3rem;
-    font-size: 0.74rem;
-  }
-}
 </style>

@@ -68,16 +68,9 @@ function trackFigureOpen(figureId) {
 </script>
 
 <template>
-  <section id="catalogo" class="catalog" aria-labelledby="catalog-title" tabindex="-1">
-    <header class="catalog-heading">
-      <div>
-        <h2 id="catalog-title">Catalogo figure</h2>
-        <p>
-          <template v-if="admin">Tutte le figure, i video e i prossimi contenuti da completare.</template>
-          <template v-else>Il tuo repertorio di salsa e bachata, in un solo posto.</template>
-        </p>
-      </div>
-      <button v-if="admin" type="button" class="catalog-add" @click="$emit('create')">
+  <section id="catalogo" class="catalog" aria-label="Catalogo figure" tabindex="-1">
+    <header v-if="admin" class="catalog-heading">
+      <button type="button" class="catalog-add catalog-create" @click="$emit('create')">
         <StudioIcon name="plus" /> Nuova figura
       </button>
     </header>
@@ -88,31 +81,36 @@ function trackFigureOpen(figureId) {
         <span class="visually-hidden">Cerca nel catalogo</span>
         <input v-model="search" type="search" placeholder="Cerca una figura…" autocomplete="off" />
       </label>
-      <label class="video-filter">
-        <span class="visually-hidden">Filtra per disponibilità video</span>
-        <select v-model="videoFilter">
-          <option value="all">Tutti i video</option>
-          <option value="ready">Con video</option>
-          <option value="missing">Senza video</option>
-        </select>
-      </label>
-      <label class="video-filter">
-        <span class="visually-hidden">Filtra per difficoltà</span>
-        <select v-model="difficulty">
-          <option value="">Tutte le difficoltà</option>
-          <option v-for="(label, value) in difficultyLabels" :key="value" :value="value">{{ label }}</option>
-          <option value="unset">Non indicata</option>
-        </select>
-      </label>
-      <label class="video-filter">
-        <span class="visually-hidden">Ordina le figure</span>
-        <select v-model="sort">
-          <option value="catalog">Ordine del catalogo</option>
-          <option value="name">Nome A–Z</option>
-          <option value="difficulty">Difficoltà crescente</option>
-          <option value="recent">Aggiornate di recente</option>
-        </select>
-      </label>
+      <details class="catalog-filter-details">
+        <summary><StudioIcon name="filters" />Filtri e ordine</summary>
+        <div class="catalog-selects">
+          <label class="video-filter">
+            <span>Video</span>
+            <select v-model="videoFilter">
+              <option value="all">Tutti i video</option>
+              <option value="ready">Con video</option>
+              <option value="missing">Senza video</option>
+            </select>
+          </label>
+          <label class="video-filter">
+            <span>Difficoltà</span>
+            <select v-model="difficulty">
+              <option value="">Tutte le difficoltà</option>
+              <option v-for="(label, value) in difficultyLabels" :key="value" :value="value">{{ label }}</option>
+              <option value="unset">Non indicata</option>
+            </select>
+          </label>
+          <label class="video-filter">
+            <span>Ordina</span>
+            <select v-model="sort">
+              <option value="catalog">Ordine del catalogo</option>
+              <option value="name">Nome A–Z</option>
+              <option value="difficulty">Difficoltà crescente</option>
+              <option value="recent">Aggiornate di recente</option>
+            </select>
+          </label>
+        </div>
+      </details>
     </div>
     <div class="catalog-meta">
       <div class="dance-filters" role="group" aria-label="Filtra catalogo per danza">
@@ -210,9 +208,6 @@ function trackFigureOpen(figureId) {
       <button v-if="hasFilters" type="button" class="catalog-add" @click="resetFilters">
         Rimuovi i filtri
       </button>
-      <button v-else-if="admin" type="button" class="catalog-add" @click="$emit('create')">
-        Aggiungi una figura
-      </button>
     </div>
     <footer class="catalog-footer">
       <StudioIcon name="shield" /><span>Figure e media visibili solo agli utenti che hanno effettuato l'accesso.</span>
@@ -224,30 +219,18 @@ function trackFigureOpen(figureId) {
 .catalog {
   border: 1px solid var(--studio-line);
   border-radius: 1rem;
-  background: linear-gradient(180deg, var(--studio-panel), var(--studio-panel-soft, var(--studio-panel)));
+  background: var(--studio-panel);
   overflow: clip;
   scroll-margin-top: 5rem;
-  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.22);
+  box-shadow: var(--shadow);
 }
 
 .catalog-heading {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: flex-start;
   gap: 1rem;
-  padding: 1.5rem;
-}
-
-.catalog-heading h2 {
-  font-size: 1.2rem;
-  line-height: 1.35;
-}
-
-.catalog-heading p {
-  max-width: 55ch;
-  margin: 0.4rem 0 0;
-  color: var(--studio-muted);
-  font-size: 0.9rem;
+  padding: 1rem 1.5rem;
 }
 
 .catalog-add {
@@ -268,15 +251,22 @@ function trackFigureOpen(figureId) {
 }
 
 .catalog-add:hover {
-  border-color: rgba(124, 58, 237, 0.6);
+  border-color: var(--brand-text);
 }
+.catalog-create { background: var(--brand); color: var(--on-accent); border-color: transparent; }
+.catalog-filter-details { flex-basis: 100%; }
+.catalog-filter-details summary { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; width: fit-content; color: var(--studio-text); font-weight: 600; }
+.catalog-filter-details summary::after { content: '+'; margin-left: 0.5rem; }
+.catalog-filter-details[open] summary::after { content: '-'; }
+.catalog-selects { display: flex; flex-wrap: wrap; gap: 0.75rem; padding-top: 0.5rem; }
 
 .catalog-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  padding: 0 1.5rem;
+  padding: 1rem 1.5rem 0;
 }
+.catalog-heading + .catalog-toolbar { padding-top: 0; }
 
 .catalog-search {
   display: flex;
@@ -286,7 +276,7 @@ function trackFigureOpen(figureId) {
   flex: 1;
   flex-basis: 18rem;
   min-width: 0;
-  border: 1px solid var(--studio-line);
+  border: 1px solid var(--input-line);
   border-radius: 0.75rem;
   color: var(--studio-muted);
   background: var(--studio-bg);
@@ -307,19 +297,22 @@ function trackFigureOpen(figureId) {
 }
 
 .video-filter {
+  display: grid;
+  flex: 1 1 10rem;
+  gap: 0.5rem;
   min-width: 0;
 }
 
 .video-filter select {
   min-height: 2.85rem;
   max-width: 100%;
-  border: 1px solid var(--studio-line);
+  border: 1px solid var(--input-line);
   border-radius: 0.75rem;
   padding: 0.5rem 1.8rem 0.5rem 0.7rem;
   background: var(--studio-bg);
   color: var(--studio-text);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 1rem;
 }
 
 .catalog-meta {
@@ -350,7 +343,7 @@ function trackFigureOpen(figureId) {
 
 .dance-filters button[aria-pressed='true'] {
   background: var(--studio-accent-soft);
-  color: #ddd6fe;
+  color: var(--brand-text);
   font-weight: 700;
 }
 
@@ -361,7 +354,7 @@ function trackFigureOpen(figureId) {
 .result-count {
   margin: 0;
   color: var(--studio-muted);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 .figure-table {
@@ -374,10 +367,10 @@ function trackFigureOpen(figureId) {
 .figure-table th {
   padding: 0.8rem 0.65rem;
   border-block: 1px solid var(--studio-line);
-  background: rgba(15, 23, 42, 0.62);
+  background: var(--studio-bg);
   color: var(--studio-muted);
   font-weight: 400;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .figure-table th:first-child {
@@ -392,7 +385,7 @@ function trackFigureOpen(figureId) {
 .figure-table td {
   border-bottom: 1px solid var(--studio-line);
   padding: 0.8rem 0.65rem;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
 .figure-table td:first-child {
@@ -420,8 +413,8 @@ function trackFigureOpen(figureId) {
   flex: 0 0 2.5rem;
   height: 2.5rem;
   border-radius: 0.7rem;
-  background: rgba(124, 58, 237, 0.14);
-  color: #ddd6fe;
+  background: var(--brand-soft);
+  color: var(--brand-text);
   font-weight: 700;
 }
 
@@ -447,7 +440,7 @@ function trackFigureOpen(figureId) {
 
 .figure-styles {
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   overflow-wrap: anywhere;
 }
 
@@ -456,8 +449,8 @@ function trackFigureOpen(figureId) {
 }
 
 .dance-tag {
-  color: #c4b5fd;
-  font-size: 0.8rem;
+  color: var(--brand-text);
+  font-size: 0.875rem;
 }
 
 .video-status {
@@ -465,7 +458,7 @@ function trackFigureOpen(figureId) {
   align-items: center;
   gap: 0.4rem;
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .video-status .studio-icon {
@@ -496,7 +489,7 @@ function trackFigureOpen(figureId) {
 
 .row-action:hover {
   border-color: var(--studio-line);
-  background: rgba(21, 32, 55, 0.85);
+  background: var(--studio-hover);
   color: var(--studio-text);
 }
 
@@ -507,7 +500,7 @@ function trackFigureOpen(figureId) {
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--studio-line);
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .catalog-footer .studio-icon {
@@ -526,7 +519,7 @@ function trackFigureOpen(figureId) {
 .catalog-state>.studio-icon {
   width: 2rem;
   height: 2rem;
-  color: #c4b5fd;
+  color: var(--brand-text);
 }
 
 .catalog-state h3 {
@@ -565,8 +558,6 @@ function trackFigureOpen(figureId) {
 @media (max-width: 640px) {
   .catalog-heading {
     padding: 1.1rem;
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .catalog-toolbar {
@@ -592,7 +583,7 @@ function trackFigureOpen(figureId) {
   }
 
   .figure-table th {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
   }
 
   .figure-table th:first-child {
@@ -634,7 +625,7 @@ function trackFigureOpen(figureId) {
   .video-status {
     display: grid;
     gap: 0.2rem;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
   }
 
   .video-status .studio-icon {
