@@ -143,8 +143,10 @@ function fileSize(file) {
                 autocomplete="off" required autofocus />
             </label>
             <label class="field">Nomi alternativi
-              <textarea v-model="aliases" name="aliases" rows="3" placeholder="Un nome per riga, ad esempio settanta per 70" aria-describedby="aliases-hint" />
-              <span id="aliases-hint" class="field-hint">Un nome per riga. Massimo 20 nomi di 100 caratteri. Usati nella ricerca.</span>
+              <textarea v-model="aliases" name="aliases" rows="3"
+                placeholder="Un nome per riga, ad esempio settanta per 70" aria-describedby="aliases-hint" />
+              <span id="aliases-hint" class="field-hint">Un nome per riga. Massimo 20 nomi di 100 caratteri. Usati nella
+                ricerca.</span>
             </label>
             <label class="field">Descrizione
               <textarea v-model="description" name="description" rows="4" maxlength="4000" />
@@ -196,7 +198,7 @@ function fileSize(file) {
               <label class="upload-tile" :class="{ chosen: video }">
                 <StudioIcon :name="video ? 'check' : 'upload'" /><strong>{{
                   video ? video.name : figure?.videoFileId ? 'Sostituisci il video' : 'Carica un video'
-                  }}</strong>
+                }}</strong>
                 <span>{{ video ? fileSize(video) : 'MP4, WebM o MOV · Fino a 50 MB' }}</span>
                 <input :key="videoKey" type="file" name="video" accept=".mp4,.webm,.mov"
                   :aria-label="figure?.videoFileId ? 'Sostituisci video' : 'Carica video'"
@@ -213,7 +215,7 @@ function fileSize(file) {
               <label class="upload-tile image-tile" :class="{ chosen: image }">
                 <StudioIcon :name="image ? 'check' : 'image'" /><strong>{{
                   image ? image.name : figure?.imageFileId ? 'Sostituisci l’immagine' : 'Aggiungi un’immagine'
-                  }}</strong>
+                }}</strong>
                 <span>{{ image ? fileSize(image) : 'JPG, PNG o WebP · Fino a 50 MB' }}</span>
                 <input :key="imageKey" type="file" name="image" accept=".jpg,.jpeg,.png,.webp"
                   :aria-label="figure?.imageFileId ? 'Sostituisci immagine' : 'Carica immagine'"
@@ -267,11 +269,11 @@ function fileSize(file) {
   border-radius: 18px;
   background: var(--studio-panel);
   color: var(--studio-text);
-  box-shadow: 0 24px 100px #0008;
+  box-shadow: var(--shadow);
 }
 
 .figure-editor::backdrop {
-  background: #070d1cc9;
+  background: var(--scrim);
   backdrop-filter: blur(5px);
 }
 
@@ -293,7 +295,7 @@ function fileSize(file) {
 .editor-header p {
   margin: 0 0 0.4rem;
   color: var(--studio-muted);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 .editor-header h2 {
@@ -361,7 +363,7 @@ function fileSize(file) {
 }
 
 .editor-fields h3 .studio-icon {
-  color: var(--studio-accent);
+  color: var(--brand-text);
   width: 1.1rem;
   height: 1.1rem;
 }
@@ -369,7 +371,7 @@ function fileSize(file) {
 .editor-fields h3>span {
   margin-left: auto;
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 400;
 }
 
@@ -384,7 +386,7 @@ function fileSize(file) {
   align-items: baseline;
   gap: 0.5rem;
   margin-bottom: 1.25rem;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
@@ -395,7 +397,7 @@ function fileSize(file) {
   min-width: 0;
   min-height: 3rem;
   padding: 0.7rem 0.8rem;
-  border: 1px solid var(--studio-line);
+  border: 1px solid var(--input-line);
   border-radius: 8px;
   background: var(--studio-bg);
   color: var(--studio-text);
@@ -404,7 +406,9 @@ function fileSize(file) {
   font-weight: 400;
 }
 
-.field>textarea { resize: vertical; }
+.field>textarea {
+  resize: vertical;
+}
 
 .field input::placeholder {
   color: var(--studio-muted);
@@ -419,7 +423,7 @@ function fileSize(file) {
 .required-note {
   margin-left: auto;
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 400;
 }
 
@@ -432,14 +436,14 @@ function fileSize(file) {
 
 .style-choices legend {
   padding: 0;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
 .field-hint {
   display: block;
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.6;
   font-weight: 400;
 }
@@ -462,7 +466,7 @@ function fileSize(file) {
   padding: 0.5rem 0.7rem;
   border: 1px solid var(--studio-line);
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   cursor: pointer;
   background: var(--studio-bg);
 }
@@ -470,7 +474,7 @@ function fileSize(file) {
 .style-option.checked {
   border-color: var(--studio-accent);
   background: var(--studio-accent-soft);
-  color: var(--studio-accent);
+  color: var(--brand-text);
 }
 
 .style-option input {
@@ -482,7 +486,7 @@ function fileSize(file) {
 
 .field-error {
   color: var(--studio-warning);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 .editor-privacy {
@@ -496,7 +500,7 @@ function fileSize(file) {
 }
 
 .editor-privacy>.studio-icon {
-  color: var(--studio-accent);
+  color: var(--brand-text);
   width: 1.1rem;
   height: 1.1rem;
   margin-top: 0.1rem;
@@ -504,7 +508,7 @@ function fileSize(file) {
 
 .editor-privacy strong {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.5;
   font-weight: 600;
 }
@@ -512,7 +516,7 @@ function fileSize(file) {
 .editor-privacy p {
   margin: 0.4rem 0 0;
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.7;
 }
 
@@ -546,12 +550,12 @@ function fileSize(file) {
 }
 
 .upload-tile>.studio-icon {
-  color: var(--studio-accent);
+  color: var(--brand-text);
   margin-block: 0.1rem 0.3rem;
 }
 
 .upload-tile strong {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   line-height: 1.5;
   max-width: 100%;
   overflow-wrap: anywhere;
@@ -559,7 +563,7 @@ function fileSize(file) {
 }
 
 .upload-tile>span {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--studio-muted);
 }
 
@@ -593,7 +597,7 @@ function fileSize(file) {
   color: var(--studio-muted);
   text-decoration: underline;
   text-underline-offset: 3px;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   cursor: pointer;
 }
 
@@ -602,7 +606,7 @@ function fileSize(file) {
   align-items: center;
   gap: 0.4rem;
   color: var(--studio-success);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .existing-file .studio-icon {
@@ -632,7 +636,7 @@ function fileSize(file) {
   gap: 0.5rem;
   margin-right: auto;
   color: var(--studio-muted);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .save-hint .studio-icon {
@@ -649,7 +653,7 @@ function fileSize(file) {
   padding: 0.65rem 1rem;
   border: 1px solid var(--studio-line);
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
 }
@@ -661,7 +665,7 @@ function fileSize(file) {
 
 .save-button {
   background: var(--studio-accent);
-  color: var(--studio-bg);
+  color: var(--on-accent);
   border-color: var(--studio-accent);
 }
 
@@ -687,12 +691,12 @@ button:disabled {
 }
 
 .editor-error strong {
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
 .editor-error p {
   margin: 0.4rem 0 0;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 :global(body:has(.figure-editor[open])) {

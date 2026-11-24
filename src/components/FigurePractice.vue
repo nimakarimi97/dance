@@ -7,6 +7,7 @@ import { isOnline } from '../lib/online.js'
 import { browserOfflineLibrary } from '../lib/offline-library.js'
 import { getFigureDetails } from '../lib/figures.js'
 import { useUnsavedWarning } from '../lib/unsaved.js'
+import StudioIcon from './StudioIcon.vue'
 
 const props = defineProps({ figure: { type: Object, required: true } })
 const favorite = shallowRef(false)
@@ -117,13 +118,18 @@ onBeforeRouteUpdate(canLeave)
 <template>
   <section class="practice-panel" aria-labelledby="practice-title">
     <h2 id="practice-title">La mia pratica</h2>
-    <p>Preferiti, progressi e note sono privati, anche rispetto agli amministratori.</p>
+    <p>Salva questa figura e tieni traccia dei tuoi progressi. Le note sono solo tue.</p>
     <p v-if="loading" role="status">Caricamento dei dati personali…</p>
     <p v-if="error" role="alert">{{ error }}</p>
-    <button v-if="!loading && !baseline" type="button" class="btn" :disabled="busy || !isOnline" @click="load">Riprova caricamento</button>
+    <button v-if="!loading && !baseline" type="button" class="btn" :disabled="busy || !isOnline" @click="load">Riprova
+      caricamento</button>
     <form v-if="baseline" @submit.prevent="save">
       <fieldset :disabled="busy || !isOnline">
-        <label class="favorite-choice"><input v-model="favorite" type="checkbox" /> Nei miei preferiti</label>
+        <button type="button" class="favorite-choice" :class="{ saved: favorite }" :aria-pressed="favorite"
+          @click="favorite = !favorite">
+          <StudioIcon name="bookmark" />
+          <span>{{ favorite ? 'Nei miei preferiti' : 'Aggiungi ai preferiti' }}</span>
+        </button>
         <label>Progresso
           <select v-model="progress">
             <option value="">Non impostato</option>
@@ -135,7 +141,9 @@ onBeforeRouteUpdate(canLeave)
         <label>Note private
           <textarea v-model="notes" rows="5" maxlength="10000" placeholder="Passi, ritmo, dettagli da ricordare…" />
         </label>
-        <button type="submit" class="btn btn-primary" :disabled="!dirty">{{ busy ? 'Salvataggio…' : 'Salva la mia pratica' }}</button>
+        <button type="submit" class="btn btn-primary" :disabled="!dirty">
+          <StudioIcon name="check" />{{ busy ? 'Salvataggio…' : 'Salva la mia pratica' }}
+        </button>
         <span v-if="dirty">Modifiche non salvate</span>
       </fieldset>
     </form>
@@ -143,10 +151,13 @@ onBeforeRouteUpdate(canLeave)
       <label>Aggiungi a una lista
         <select v-model="selectedList" :disabled="busy || !isOnline">
           <option value="">Scegli una lista</option>
-          <option v-for="list in lists" :key="list.$id" :value="list.$id">{{ list.name }}{{ list.figureIds.includes(figure.id) ? ' · Già presente' : '' }}</option>
+          <option v-for="list in lists" :key="list.$id" :value="list.$id">{{ list.name }}{{
+            list.figureIds.includes(figure.id) ? ' · Già presente' : '' }}</option>
         </select>
       </label>
-      <button type="button" class="btn" :disabled="!selectedList || busy || !isOnline" @click="addToList">Aggiungi alla lista</button>
+      <button type="button" class="btn" :disabled="!selectedList || busy || !isOnline" @click="addToList">
+        <StudioIcon name="plus" />Aggiungi alla lista
+      </button>
       <RouterLink class="btn" to="/dashboard?sezione=pratica">Gestisci le mie liste</RouterLink>
     </div>
     <div class="offline-controls">
@@ -154,26 +165,107 @@ onBeforeRouteUpdate(canLeave)
       <p v-if="offlineError" role="alert">{{ offlineError }}</p>
       <p v-if="savedAt">Disponibile offline · Copia del {{ new Date(savedAt).toLocaleString('it') }}.</p>
       <p v-else>Non ancora salvata offline.</p>
-      <p>Solo testo su questo dispositivo, senza video, immagini o note. Le copie vengono eliminate all’uscita o al cambio account.</p>
-      <button type="button" class="btn" :disabled="busy || !isOnline" @click="saveOffline">{{ savedAt ? 'Aggiorna copia offline' : 'Salva dettagli offline' }}</button>
+      <p>Solo testo su questo dispositivo, senza video, immagini o note. Le copie vengono eliminate all’uscita o al
+        cambio account.</p>
+      <button type="button" class="btn" :disabled="busy || !isOnline" @click="saveOffline">
+        <StudioIcon name="download" />{{ savedAt ? 'Aggiorna copia offline' : 'Salva dettagli offline' }}
+      </button>
       <RouterLink class="btn" to="/offline">Apri le copie offline</RouterLink>
     </div>
     <p v-if="message" role="status">{{ message }}</p>
-    <p v-if="!isOnline" role="status">Sei offline: le modifiche personali richiedono una connessione. Le bozze restano qui finché non lasci la pagina.</p>
+    <p v-if="!isOnline" role="status">Sei offline: le modifiche personali richiedono una connessione. Le bozze restano
+      qui finché non lasci la pagina.</p>
   </section>
 </template>
 
 <style scoped>
-.practice-panel { margin-block: 1.5rem; padding: 1.25rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--ink-2); overflow-wrap: anywhere; }
-.practice-panel h2, .practice-panel h3 { line-height: 1.4; }
-.practice-panel p { color: var(--muted); }
-fieldset { display: grid; gap: 1rem; border: 0; padding: 0; min-width: 0; }
-label { display: grid; gap: 0.5rem; }
-select, textarea { width: 100%; min-width: 0; min-height: 3rem; padding: 0.7rem; font: inherit; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 0.6rem; }
-textarea { resize: vertical; }
-.favorite-choice { display: flex; align-items: center; min-height: 3rem; gap: 0.75rem; }
-.favorite-choice input { width: 1.25rem; height: 1.25rem; }
-.list-controls, .offline-controls { display: grid; gap: 0.75rem; border-top: 1px solid var(--line); padding-top: 1.25rem; margin-top: 1.25rem; }
-.offline-controls p { margin: 0; }
-button:active { opacity: 0.8; }
+.practice-panel {
+  margin-block: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.practice-panel h2,
+.practice-panel h3 {
+  line-height: 1.4;
+}
+
+.practice-panel p {
+  color: var(--muted);
+}
+
+fieldset {
+  display: grid;
+  gap: 1rem;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  padding: 0.7rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--ink);
+  border: 1px solid var(--input-line);
+  border-radius: 0.6rem;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.favorite-choice {
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--ink);
+  color: var(--text);
+  text-align: left;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.favorite-choice.saved {
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  border-color: var(--brand-text);
+}
+
+.favorite-choice.saved :deep(.studio-icon) {
+  fill: currentColor;
+}
+
+.list-controls,
+.offline-controls {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.offline-controls p {
+  margin: 0;
+}
+
+button:active {
+  opacity: 0.8;
+}
 </style>

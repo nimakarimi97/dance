@@ -109,8 +109,8 @@ function dismiss() {
   margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
   padding: clamp(1.1rem, 3vw, 1.5rem);
   border-radius: var(--radius);
-  background: linear-gradient(160deg, rgba(245, 158, 11, 0.16), rgba(255, 255, 255, 0.03));
-  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: var(--ink-2);
+  border: 1px solid var(--line);
 }
 
 .install-title {
@@ -124,13 +124,13 @@ function dismiss() {
 .install-platform,
 .install-note {
   margin: 0.5rem 0 0;
-  color: #cbd5e1;
+  color: var(--muted);
 }
 
 .install-note {
   padding: 0.6rem 0.8rem;
   border-radius: 10px;
-  background: rgba(245, 158, 11, 0.12);
+  background: color-mix(in srgb, var(--warning) 12%, var(--ink-2));
   color: var(--text);
 }
 

@@ -119,8 +119,10 @@ onBeforeUnmount(() => animationContext?.revert())
 
       <p v-if="currentFigure.aliases?.length">Altri nomi: {{ currentFigure.aliases.join(', ') }}</p>
       <p v-if="currentFigure.description" class="figure-description">{{ currentFigure.description }}</p>
-      <p v-if="currentFigure.difficulty">Difficoltà: {{ { beginner: 'Base', intermediate: 'Intermedia', advanced: 'Avanzata' }[currentFigure.difficulty] }}</p>
-      <FigurePractice v-if="currentUser" :key="currentFigure.id" :figure="currentFigure" />
+      <p v-if="currentFigure.difficulty">Difficoltà: {{ {
+        beginner: 'Base', intermediate: 'Intermedia', advanced:
+          'Avanzata'
+      }[currentFigure.difficulty] }}</p>
 
       <div class="player" :class="{ 'player-placeholder': !videoUrl && !currentFigure.videoFileId }">
         <ProtectedMedia v-if="currentFigure.videoFileId" :file-id="currentFigure.videoFileId" kind="video"
@@ -149,6 +151,7 @@ onBeforeUnmount(() => animationContext?.revert())
 
       <ProtectedMedia v-if="currentFigure.imageFileId" :file-id="currentFigure.imageFileId" kind="image"
         :title="currentFigure.nome" />
+      <FigurePractice v-if="currentUser" :key="currentFigure.id" :figure="currentFigure" />
       <nav class="pager" aria-label="Figure precedenti e successive">
         <RouterLink v-if="previousFigure" :to="{ name: 'figura', params: { figura: previousFigure.id } }"
           class="pager-link">
@@ -179,7 +182,10 @@ onBeforeUnmount(() => animationContext?.revert())
   max-width: 960px;
 }
 
-.figure-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.figure-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 
 .back {
   display: inline-flex;
@@ -203,7 +209,7 @@ onBeforeUnmount(() => animationContext?.revert())
   font-weight: 700;
   line-height: 1;
   padding-bottom: 0.1em;
-  background: linear-gradient(90deg, #fb7185, #a5b4fc);
+  background: var(--grad-text);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -218,9 +224,9 @@ onBeforeUnmount(() => animationContext?.revert())
 }
 
 .tag-dance {
-  background: var(--grad);
-  border-color: transparent;
-  color: #fff;
+  background: var(--brand-soft);
+  border-color: var(--brand-text);
+  color: var(--brand-text);
   font-weight: 700;
 }
 
@@ -230,7 +236,7 @@ onBeforeUnmount(() => animationContext?.revert())
   border-radius: 1rem;
   overflow: hidden;
   background: #000;
-  box-shadow: 0 24px 54px -36px rgba(2, 6, 23, 0.9);
+  box-shadow: var(--shadow);
   border: 1px solid var(--line);
 }
 
@@ -252,9 +258,7 @@ onBeforeUnmount(() => animationContext?.revert())
   display: grid;
   place-items: center;
   padding: 1rem;
-  background:
-    radial-gradient(circle at 30% 20%, rgba(225, 29, 72, 0.35), transparent 50%),
-    radial-gradient(circle at 80% 90%, rgba(38, 41, 225, 0.35), transparent 50%), var(--ink-2);
+  background: var(--ink-2);
 }
 
 .placeholder-body {
@@ -306,7 +310,7 @@ onBeforeUnmount(() => animationContext?.revert())
 
 .pager-link:hover {
   background: var(--ink-3);
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: var(--line);
 }
 
 .pager-link.next {

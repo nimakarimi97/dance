@@ -58,7 +58,8 @@ function close() {
       <label>Aggiungi figura
         <select v-model="selected">
           <option value="">Scegli una figura</option>
-          <option v-for="figure in figures" :key="figure.id" :value="figure.id" :disabled="ids.includes(figure.id)">{{ figure.nome }}</option>
+          <option v-for="figure in figures" :key="figure.id" :value="figure.id" :disabled="ids.includes(figure.id)">{{
+            figure.nome }}</option>
         </select>
       </label>
       <button type="button" class="btn" :disabled="!selected || ids.length >= 200" @click="add">Aggiungi</button>
@@ -66,7 +67,8 @@ function close() {
       <ul class="entries">
         <li v-for="entry in entries" :key="entry.id">
           <span>{{ entry.nome }}</span>
-          <button type="button" class="btn" :aria-label="`Rimuovi ${entry.nome}`" @click="ids = ids.filter(id => id !== entry.id)">Rimuovi</button>
+          <button type="button" class="btn" :aria-label="`Rimuovi ${entry.nome}`"
+            @click="ids = ids.filter(id => id !== entry.id)">Rimuovi</button>
         </li>
       </ul>
       <button type="submit" class="btn btn-primary">{{ busy ? 'Salvataggio…' : 'Salva lista' }}</button>
@@ -77,13 +79,64 @@ function close() {
 </template>
 
 <style scoped>
-.list-editor { display: grid; gap: 1rem; padding: 1rem; border: 1px solid var(--line); border-radius: 0.75rem; }
-h3 { line-height: 1.4; }
-fieldset { display: grid; gap: 0.75rem; border: 0; padding: 0; min-width: 0; }
-label { display: grid; gap: 0.5rem; }
-input, select { font: inherit; font-size: 1rem; width: 100%; min-width: 0; min-height: 3rem; padding: 0.7rem; color: var(--text); background: var(--ink); border: 1px solid var(--line); border-radius: 0.5rem; }
-.entries { padding: 0; list-style: none; }
-.entries li { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-block: 0.5rem; overflow-wrap: anywhere; }
-.entries span { min-width: 0; }
-.entries button { flex-shrink: 0; }
+.list-editor {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+h3 {
+  line-height: 1.4;
+}
+
+fieldset {
+  display: grid;
+  gap: 0.75rem;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+input,
+select {
+  font: inherit;
+  font-size: 1rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  padding: 0.7rem;
+  color: var(--text);
+  background: var(--ink);
+  border: 1px solid var(--input-line);
+  border-radius: 0.5rem;
+}
+
+.entries {
+  padding: 0;
+  list-style: none;
+}
+
+.entries li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-block: 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.entries span {
+  min-width: 0;
+}
+
+.entries button {
+  flex-shrink: 0;
+}
 </style>
