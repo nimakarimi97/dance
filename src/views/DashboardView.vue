@@ -1,6 +1,6 @@
 <script setup>
 import { computed, defineAsyncComponent, nextTick, shallowRef, useTemplateRef } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { currentUser, isAdmin, isSuperAdmin, signOut } from '../lib/auth.js'
 import { dances, figures, refreshFigures, useFigureCatalog } from '../data/danze.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
@@ -9,10 +9,13 @@ import DashboardCatalog from '../components/DashboardCatalog.vue'
 import AdminUserRoles from '../components/AdminUserRoles.vue'
 import FigureEditor from '../components/FigureEditor.vue'
 import StudioIcon from '../components/StudioIcon.vue'
+import PersonalPractice from '../components/PersonalPractice.vue'
 
 const AdminAnalytics = defineAsyncComponent(() => import('../components/AdminAnalytics.vue'))
 const AdminAnalyticsSnapshot = defineAsyncComponent(() => import('../components/AdminAnalyticsSnapshot.vue'))
+const AdminFigureOperations = defineAsyncComponent(() => import('../components/AdminFigureOperations.vue'))
 const router = useRouter()
+const route = useRoute()
 const { loading, error, retry } = useFigureCatalog()
 const isSigningOut = shallowRef(false)
 const signOutError = shallowRef('')
@@ -22,9 +25,12 @@ const savedId = shallowRef('')
 const videoFilter = shallowRef('all')
 const createButton = useTemplateRef('create-button')
 const sectionHeading = useTemplateRef('section-heading')
-const activeSection = shallowRef('panoramica')
+const personalPractice = useTemplateRef('personal-practice')
+const activeSection = shallowRef(route.query.sezione === 'pratica' ? 'pratica' : 'panoramica')
 const sectionTitles = {
   panoramica: 'Panoramica',
+  pratica: 'La mia pratica',
+  operazioni: 'Importazione e cronologia',
   catalogo: 'Catalogo figure',
   visualizzazioni: 'Visualizzazioni',
   utenti: 'Utenti',
@@ -33,6 +39,8 @@ const sectionTitles = {
 const sectionTitle = computed(() => sectionTitles[activeSection.value])
 const sectionDescriptions = {
   panoramica: 'Panoramica del repertorio e progressi video.',
+  pratica: 'Preferiti, liste personali e progressi di apprendimento.',
+  operazioni: 'Modifiche massive, importazione con anteprima e audit amministrativo.',
   catalogo: 'Gestisci figure, video e contenuti del catalogo.',
   visualizzazioni: 'Monitora trend e performance delle figure.',
   utenti: 'Gestisci ruoli e accessi degli utenti registrati.',
@@ -44,9 +52,13 @@ const sectionDescription = computed(
 const sectionItems = computed(() => {
   const items = [
     { id: 'panoramica', label: 'Panoramica', icon: 'grid' },
+    { id: 'pratica', label: 'La mia pratica', icon: 'music' },
     { id: 'catalogo', label: 'Catalogo', icon: 'library' },
   ]
-  if (isAdmin.value) items.push({ id: 'visualizzazioni', label: 'Analytics', icon: 'video' })
+  if (isAdmin.value) items.push(
+    { id: 'operazioni', label: 'Import e audit', icon: 'edit' },
+    { id: 'visualizzazioni', label: 'Analytics', icon: 'video' },
+  )
   if (isSuperAdmin.value) items.push({ id: 'utenti', label: 'Utenti', icon: 'user' })
   items.push({ id: 'account', label: 'Account', icon: 'shield' })
   return items
@@ -82,6 +94,7 @@ const joinedDate = computed(() => {
 })
 
 async function showSection(id) {
+  if (activeSection.value === 'pratica' && id !== 'pratica' && personalPractice.value?.canLeave() === false) return
   if (activeSection.value !== id && currentUser.value?.$id) {
     recordAnalyticsEvent({
       eventType: ANALYTICS_EVENTS.DASHBOARD_NAV_CLICK,
@@ -136,8 +149,8 @@ async function signOutUser() {
   try {
     await signOut()
     await router.replace({ name: 'auth' })
-  } catch {
-    signOutError.value = 'Uscita non riuscita. Controlla la connessione e riprova.'
+  } catch (cause) {
+    signOutError.value = cause.message || 'Uscita non riuscita. Controlla la connessione e riprova.'
   } finally {
     isSigningOut.value = false
   }
@@ -319,8 +332,10 @@ async function signOutUser() {
         :admin="isAdmin" :user-id="currentUser?.$id" v-model:video-filter="videoFilter" @create="openEditor()"
         @edit="openEditor" @retry="retry" />
 
+      <PersonalPractice v-if="activeSection === 'pratica'" ref="personal-practice" :figures="figures" :catalog-loading="loading" :catalog-error="error" />
       <AdminAnalytics v-if="isAdmin && activeSection === 'visualizzazioni'" />
       <AdminUserRoles v-if="isSuperAdmin && activeSection === 'utenti'" />
+      <AdminFigureOperations v-if="isAdmin && activeSection === 'operazioni'" :figures="figures" @changed="refreshFigures" />
 
       <section v-if="activeSection === 'account'" id="account" class="account-panel" aria-labelledby="account-title">
         <div class="account-person">

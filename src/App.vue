@@ -117,7 +117,7 @@ function trackNavigation(target) {
     </header>
 
     <p v-if="!isOnline" class="offline" role="status">
-      Sei offline. Per accedere alle figure e ai video serve una connessione.
+      Sei offline. <RouterLink to="/offline">Apri i dettagli salvati per la pratica</RouterLink>. I video richiedono una connessione.
     </p>
     <p v-if="authError && route.name !== 'auth'" class="offline" role="alert">
       {{ authError }}
@@ -125,7 +125,7 @@ function trackNavigation(target) {
 
     <RouterView v-slot="{ Component }">
       <Transition name="page" mode="out-in">
-        <component :is="Component" v-if="!route.meta.requiresAuth || isLoggedIn" />
+        <component :is="Component" v-if="!route.meta.requiresAuth || isLoggedIn" :key="currentUser?.$id || 'guest'" />
       </Transition>
     </RouterView>
 

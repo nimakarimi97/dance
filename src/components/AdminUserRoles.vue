@@ -48,7 +48,13 @@ async function changeRole(user, role) {
       userId: currentUser.value?.$id,
     })
   } catch (cause) {
-    error.value = cause.message || 'Impossibile aggiornare il ruolo.'
+    const message = cause.message || 'Impossibile aggiornare il ruolo.'
+    try {
+      users.value = await listUsers()
+      error.value = `${message} Elenco aggiornato dal server.`
+    } catch (refreshError) {
+      error.value = `${message} Verifica dello stato attuale non riuscita: ${refreshError.message}`
+    }
   } finally {
     pending.value = ''
   }

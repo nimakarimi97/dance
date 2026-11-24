@@ -1,6 +1,6 @@
 <script setup>
 import { shallowRef, watch } from 'vue'
-import { isLoggedIn } from '../lib/auth.js'
+import { currentUser } from '../lib/auth.js'
 import { loadMedia } from '../lib/figures.js'
 
 const props = defineProps({
@@ -14,8 +14,8 @@ const loading = shallowRef(false)
 const attempt = shallowRef(0)
 
 watch(
-  [() => props.fileId, isLoggedIn, attempt],
-  async ([fileId, loggedIn], _, onCleanup) => {
+  [() => props.fileId, () => currentUser.value?.$id, attempt],
+  async ([fileId, userId], _, onCleanup) => {
     let active = true
     let url = ''
     onCleanup(() => {
@@ -25,7 +25,7 @@ watch(
     source.value = ''
     error.value = ''
     loading.value = false
-    if (!loggedIn || !fileId) return
+    if (!userId || !fileId) return
     loading.value = true
     try {
       const blob = await loadMedia(fileId)
@@ -39,7 +39,7 @@ watch(
       if (active) loading.value = false
     }
   },
-  { immediate: true },
+  { immediate: true, flush: 'sync' },
 )
 </script>
 

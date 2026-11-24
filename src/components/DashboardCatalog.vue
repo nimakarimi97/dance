@@ -2,7 +2,7 @@
 import { computed, shallowRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import { dances } from '../data/danze.js'
-import { filterCatalog } from '../lib/catalog.js'
+import { difficultyLabels, filterCatalog } from '../lib/catalog.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
 import { recordAnalyticsEvent } from '../lib/figures.js'
 import StudioIcon from './StudioIcon.vue'
@@ -20,15 +20,19 @@ defineEmits(['edit', 'create', 'retry'])
 const videoFilter = defineModel('videoFilter', { type: String, default: 'all' })
 const search = shallowRef('')
 const danceFilter = shallowRef('')
+const difficulty = shallowRef('')
+const sort = shallowRef('catalog')
 const visibleFigures = computed(() =>
   filterCatalog(props.figures, {
     search: search.value,
     dance: danceFilter.value,
     video: videoFilter.value,
+    difficulty: difficulty.value,
+    sort: sort.value,
   }),
 )
 
-const hasFilters = computed(() => Boolean(search.value || danceFilter.value || videoFilter.value !== 'all'))
+const hasFilters = computed(() => Boolean(search.value || danceFilter.value || difficulty.value || videoFilter.value !== 'all' || sort.value !== 'catalog'))
 const resultLabel = computed(() => {
   if (props.loading) return 'Caricamento…'
   if (props.error) return 'Catalogo non disponibile'
@@ -48,6 +52,8 @@ function resetFilters() {
   search.value = ''
   danceFilter.value = ''
   videoFilter.value = 'all'
+  difficulty.value = ''
+  sort.value = 'catalog'
 }
 
 function trackFigureOpen(figureId) {
@@ -88,6 +94,23 @@ function trackFigureOpen(figureId) {
           <option value="all">Tutti i video</option>
           <option value="ready">Con video</option>
           <option value="missing">Senza video</option>
+        </select>
+      </label>
+      <label class="video-filter">
+        <span class="visually-hidden">Filtra per difficoltà</span>
+        <select v-model="difficulty">
+          <option value="">Tutte le difficoltà</option>
+          <option v-for="(label, value) in difficultyLabels" :key="value" :value="value">{{ label }}</option>
+          <option value="unset">Non indicata</option>
+        </select>
+      </label>
+      <label class="video-filter">
+        <span class="visually-hidden">Ordina le figure</span>
+        <select v-model="sort">
+          <option value="catalog">Ordine del catalogo</option>
+          <option value="name">Nome A–Z</option>
+          <option value="difficulty">Difficoltà crescente</option>
+          <option value="recent">Aggiornate di recente</option>
         </select>
       </label>
     </div>
@@ -146,6 +169,7 @@ function trackFigureOpen(figureId) {
                 }}</RouterLink>
                 <span class="figure-styles"><span class="mobile-dance">{{ dances[figure.danza]?.nome }} · </span>{{
                   styleNames(figure) }}</span>
+                <span class="figure-styles">{{ difficultyLabels[figure.difficulty] || 'Difficoltà non indicata' }}</span>
               </div>
             </div>
           </td>
@@ -249,6 +273,7 @@ function trackFigureOpen(figureId) {
 
 .catalog-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   padding: 0 1.5rem;
 }
@@ -259,6 +284,7 @@ function trackFigureOpen(figureId) {
   gap: 0.6rem;
   padding: 0 0.8rem;
   flex: 1;
+  flex-basis: 18rem;
   min-width: 0;
   border: 1px solid var(--studio-line);
   border-radius: 0.75rem;

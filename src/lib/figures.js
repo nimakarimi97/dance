@@ -1,6 +1,7 @@
 import { ID, Query } from 'appwrite'
 import { appwriteConfig, client, storage, tablesDB } from './appwrite.js'
 import { ANALYTICS_EVENTS } from './analytics.js'
+import { saveAdminFigure } from './admin-api.js'
 
 const table = () => ({
   databaseId: appwriteConfig.databaseId,
@@ -18,6 +19,11 @@ export async function listFigures() {
     rows.push(...page.rows)
   } while (page.rows.length === 100)
   return rows.map(row => ({ ...row, id: row.$id }))
+}
+
+export async function getFigureDetails(id) {
+  const row = await tablesDB.getRow({ ...table(), rowId: id })
+  return { ...row, id: row.$id }
 }
 
 export async function recordFigureView(figureId, userId) {
@@ -72,7 +78,7 @@ function validateFile(file, extensions) {
   }
 }
 
-export async function saveFigure({ id, data, video, image, userId }) {
+export async function saveFigure({ id, data, video, image, expectedUpdatedAt }) {
   validateFile(video, VIDEO_EXTENSIONS)
   validateFile(image, IMAGE_EXTENSIONS)
   const uploaded = []
@@ -85,10 +91,12 @@ export async function saveFigure({ id, data, video, image, userId }) {
       uploaded.push(result.$id)
       data = { ...data, [key]: result.$id }
     }
-    return id
-      ? await tablesDB.updateRow({ ...table(), rowId: id, data })
-      : await tablesDB.createRow({ ...table(), rowId: ID.unique(), data: { ...data, createdBy: userId }, permissions: [] })
+    return await saveAdminFigure({ id, data, expectedUpdatedAt })
   } catch (error) {
+    if (error.outcome === 'unknown') {
+      error.message += ' Esito incerto: verifica catalogo e cronologia prima di riprovare. I file caricati sono conservati per evitare collegamenti interrotti.'
+      throw error
+    }
     const cleanup = await Promise.allSettled(uploaded.map(fileId =>
       storage.deleteFile({ bucketId: appwriteConfig.mediaBucketId, fileId }),
     ))

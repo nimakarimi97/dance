@@ -1,7 +1,7 @@
 import bachata from './bachata.json'
 import salsa from './salsa.json'
 import { onMounted, shallowRef, watch } from 'vue'
-import { isLoggedIn } from '../lib/auth.js'
+import { currentUser, isLoggedIn } from '../lib/auth.js'
 import { listFigures } from '../lib/figures.js'
 import { isFeatureEnabled } from '../config/features.js'
 
@@ -18,8 +18,7 @@ let generation = 0
 
 const canReadFigures = () => isFeatureEnabled('publicContent') || isLoggedIn.value
 
-watch(isLoggedIn, loggedIn => {
-  if (loggedIn) return
+watch(() => currentUser.value?.$id, () => {
   generation++
   figures.value = []
   error.value = ''

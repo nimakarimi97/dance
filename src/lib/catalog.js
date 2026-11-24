@@ -1,10 +1,25 @@
-export function filterCatalog(figures, { search = '', dance = '', video = 'all' } = {}) {
-  const normalize = text => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+export const difficultyLabels = { beginner: 'Base', intermediate: 'Intermedia', advanced: 'Avanzata' }
+const difficultyRank = { beginner: 1, intermediate: 2, advanced: 3 }
+
+export function normalizeSearch(text) {
+  return String(text ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+}
+
+export function filterCatalog(figures, { search = '', dance = '', video = 'all', difficulty = '', sort = 'catalog', style = '' } = {}) {
+  const normalize = normalizeSearch
   const query = normalize(search)
-  return figures.filter(figure => {
+  const results = figures.filter(figure => {
     const hasVideo = Boolean(figure.videoFileId || figure.youtubeId)
+    const text = [figure.nome, ...(figure.aliases || []), figure.description].map(normalize).join(' ')
     return (!dance || figure.danza === dance)
-      && (!query || normalize(figure.nome).includes(query))
+      && (!style || figure.stili?.includes(style))
+      && (!difficulty || (difficulty === 'unset' ? !figure.difficulty : figure.difficulty === difficulty))
+      && (!query || query.split(/\s+/).every(word => text.includes(word)))
       && (video === 'all' || (video === 'ready' ? hasVideo : !hasVideo))
   })
+  const byName = (a, b) => a.nome.localeCompare(b.nome, 'it', { numeric: true, sensitivity: 'base' }) || a.id.localeCompare(b.id)
+  if (sort === 'name') results.sort(byName)
+  if (sort === 'difficulty') results.sort((a, b) => (difficultyRank[a.difficulty] || 4) - (difficultyRank[b.difficulty] || 4) || byName(a, b))
+  if (sort === 'recent') results.sort((a, b) => (b.$updatedAt || '').localeCompare(a.$updatedAt || '') || byName(a, b))
+  return results
 }

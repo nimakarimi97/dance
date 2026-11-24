@@ -2,10 +2,10 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { dances } from '../data/danze.js'
-import { currentUser } from '../lib/auth.js'
 import { saveFigure } from '../lib/figures.js'
 import { parseYoutubeId } from '../lib/youtube.js'
 import StudioIcon from './StudioIcon.vue'
+import { difficultyLabels } from '../lib/catalog.js'
 
 const props = defineProps({ figure: { type: Object, default: null } })
 const emit = defineEmits(['close', 'saved'])
@@ -15,6 +15,9 @@ const nome = shallowRef(props.figure?.nome || '')
 const danza = shallowRef(props.figure?.danza || 'salsa')
 const stili = shallowRef([...(props.figure?.stili || [])])
 const youtubeId = shallowRef(props.figure?.youtubeId || '')
+const aliases = shallowRef((props.figure?.aliases || []).join('\n'))
+const description = shallowRef(props.figure?.description || '')
+const difficulty = shallowRef(props.figure?.difficulty || '')
 const video = shallowRef(null)
 const image = shallowRef(null)
 const videoKey = shallowRef(0)
@@ -29,6 +32,9 @@ const dirty = computed(
     danza.value !== (props.figure?.danza || 'salsa') ||
     stili.value.join(',') !== (props.figure?.stili || []).join(',') ||
     youtubeId.value !== (props.figure?.youtubeId || '') ||
+    aliases.value !== (props.figure?.aliases || []).join('\n') ||
+    description.value !== (props.figure?.description || '') ||
+    difficulty.value !== (props.figure?.difficulty || '') ||
     Boolean(video.value || image.value),
 )
 
@@ -62,6 +68,11 @@ async function submit() {
     return
   }
   const parsedYoutubeId = parseYoutubeId(youtubeId.value)
+  const parsedAliases = [...new Set(aliases.value.split('\n').map(value => value.trim()).filter(Boolean))]
+  if (parsedAliases.length > 20 || parsedAliases.some(value => value.length > 100)) {
+    await showError('Inserisci al massimo 20 nomi alternativi, fino a 100 caratteri ciascuno.')
+    return
+  }
   if (youtubeId.value.trim() && !parsedYoutubeId) {
     await showError(
       'Il link o l’ID YouTube non è valido. Incolla un ID di 11 caratteri oppure un link youtube.com o youtu.be.',
@@ -72,10 +83,13 @@ async function submit() {
   try {
     const result = await saveFigure({
       id: props.figure?.id,
-      data: { nome: nome.value.trim(), danza: danza.value, stili: [...stili.value], youtubeId: parsedYoutubeId },
+      data: {
+        nome: nome.value.trim(), danza: danza.value, stili: [...stili.value], youtubeId: parsedYoutubeId,
+        aliases: parsedAliases, description: description.value.trim(), difficulty: difficulty.value || null,
+      },
       video: video.value,
       image: image.value,
-      userId: currentUser.value?.$id,
+      expectedUpdatedAt: props.figure?.$updatedAt,
     })
     emit('saved', result.$id)
   } catch (cause) {
@@ -127,6 +141,19 @@ function fileSize(file) {
             <label class="field">Nome della figura <span class="required-note">Obbligatorio</span>
               <input v-model="nome" name="figureName" placeholder="Ad esempio, Enchufla" maxlength="255"
                 autocomplete="off" required autofocus />
+            </label>
+            <label class="field">Nomi alternativi
+              <textarea v-model="aliases" name="aliases" rows="3" placeholder="Un nome per riga, ad esempio settanta per 70" aria-describedby="aliases-hint" />
+              <span id="aliases-hint" class="field-hint">Un nome per riga. Massimo 20 nomi di 100 caratteri. Usati nella ricerca.</span>
+            </label>
+            <label class="field">Descrizione
+              <textarea v-model="description" name="description" rows="4" maxlength="4000" />
+            </label>
+            <label class="field">Difficoltà
+              <select v-model="difficulty" name="difficulty">
+                <option value="">Non indicata</option>
+                <option v-for="(label, value) in difficultyLabels" :key="value" :value="value">{{ label }}</option>
+              </select>
             </label>
             <label class="field">Danza
               <select v-model="danza" name="dance">
@@ -362,6 +389,7 @@ function fileSize(file) {
 }
 
 .field>input,
+.field>textarea,
 .field>select {
   width: 100%;
   min-width: 0;
@@ -375,6 +403,8 @@ function fileSize(file) {
   font-size: 1rem;
   font-weight: 400;
 }
+
+.field>textarea { resize: vertical; }
 
 .field input::placeholder {
   color: var(--studio-muted);

@@ -7,6 +7,7 @@ import { currentUser } from '../lib/auth.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
 import { recordAnalyticsEvent } from '../lib/figures.js'
 import { canAnimate } from '../lib/motion.js'
+import { difficultyLabels, filterCatalog } from '../lib/catalog.js'
 
 const props = defineProps({ danza: { type: String, required: true } })
 const route = useRoute()
@@ -18,24 +19,14 @@ const danceFigures = computed(() => getFiguresForDance(props.danza))
 
 const activeStyle = computed(() => (typeof route.query.stile === 'string' ? route.query.stile : ''))
 const searchText = ref(typeof route.query.q === 'string' ? route.query.q : '')
-const hasFilters = computed(() => Boolean(activeStyle.value || searchText.value.trim()))
+const difficulty = computed(() => typeof route.query.difficolta === 'string' ? route.query.difficolta : '')
+const videoFilter = computed(() => typeof route.query.video === 'string' ? route.query.video : 'all')
+const sort = computed(() => typeof route.query.ordine === 'string' ? route.query.ordine : 'catalog')
+const hasFilters = computed(() => Boolean(activeStyle.value || searchText.value.trim() || difficulty.value || videoFilter.value !== 'all' || sort.value !== 'catalog'))
 
-function normalize(text) {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .trim()
-}
-
-const filteredFigures = computed(() => {
-  const query = normalize(searchText.value)
-  return danceFigures.value.filter((figure) => {
-    const matchesStyle = !activeStyle.value || figure.stili.includes(activeStyle.value)
-    const matchesText = !query || normalize(figure.nome).includes(query)
-    return matchesStyle && matchesText
-  })
-})
+const filteredFigures = computed(() => filterCatalog(danceFigures.value, {
+  search: searchText.value, style: activeStyle.value, difficulty: difficulty.value, video: videoFilter.value, sort: sort.value,
+}))
 
 const countLabel = computed(() => {
   const n = filteredFigures.value.length
@@ -78,7 +69,7 @@ function onSearch() {
 function resetFilters() {
   clearTimeout(searchTimer)
   searchText.value = ''
-  updateQuery({ stile: undefined, q: undefined })
+  updateQuery({ stile: undefined, q: undefined, difficolta: undefined, video: undefined, ordine: undefined })
 }
 
 // The same component instance is reused when switching dance, so resync the search box.
@@ -158,6 +149,31 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
+      <div class="extra-filters">
+        <label>Difficoltà
+          <select :value="difficulty" @change="updateQuery({ difficolta: $event.target.value })">
+            <option value="">Tutte</option>
+            <option v-for="(label, value) in difficultyLabels" :key="value" :value="value">{{ label }}</option>
+            <option value="unset">Non indicata</option>
+          </select>
+        </label>
+        <label>Video
+          <select :value="videoFilter" @change="updateQuery({ video: $event.target.value })">
+            <option value="all">Tutti</option>
+            <option value="ready">Con video</option>
+            <option value="missing">Senza video</option>
+          </select>
+        </label>
+        <label>Ordina
+          <select :value="sort" @change="updateQuery({ ordine: $event.target.value })">
+            <option value="catalog">Catalogo</option>
+            <option value="name">Nome A–Z</option>
+            <option value="difficulty">Difficoltà crescente</option>
+            <option value="recent">Aggiornate di recente</option>
+          </select>
+        </label>
+      </div>
+
       <p v-if="loading" class="count" role="status">
         Caricamento figure…
       </p>
@@ -176,6 +192,7 @@ onBeforeUnmount(() => {
           <RouterLink :to="{ name: 'figura', params: { figura: figure.id } }" class="figura-card"
             @click="trackFigureClick(figure.id)">
             <span class="figura-nome">{{ figure.nome }}</span>
+            <span class="tag">{{ difficultyLabels[figure.difficulty] || 'Difficoltà non indicata' }}</span>
             <span class="figura-stili">
               <span v-for="styleId in figure.stili" :key="styleId" class="tag">{{ styleName(styleId) }}</span>
             </span>
@@ -204,6 +221,9 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.extra-filters { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-block: 1rem; }
+.extra-filters label { flex: 1 1 9rem; display: grid; gap: 0.4rem; }
+.extra-filters select { width: 100%; min-width: 0; min-height: 3rem; padding: 0.6rem; font: inherit; background: var(--ink-2); color: var(--text); border: 1px solid var(--line); border-radius: 0.6rem; }
 .danza {
   padding: clamp(1.5rem, 5vw, 3rem) 0 1rem;
 }

@@ -8,6 +8,7 @@ import { recordFigureView } from '../lib/figures.js'
 import { isOnline } from '../lib/online.js'
 import { canAnimate } from '../lib/motion.js'
 import ProtectedMedia from '../components/ProtectedMedia.vue'
+import FigurePractice from '../components/FigurePractice.vue'
 
 const props = defineProps({ figura: { type: String, required: true } })
 const { loading, error, retry } = useFigureCatalog()
@@ -116,6 +117,11 @@ onBeforeUnmount(() => animationContext?.revert())
         </div>
       </header>
 
+      <p v-if="currentFigure.aliases?.length">Altri nomi: {{ currentFigure.aliases.join(', ') }}</p>
+      <p v-if="currentFigure.description" class="figure-description">{{ currentFigure.description }}</p>
+      <p v-if="currentFigure.difficulty">Difficoltà: {{ { beginner: 'Base', intermediate: 'Intermedia', advanced: 'Avanzata' }[currentFigure.difficulty] }}</p>
+      <FigurePractice v-if="currentUser" :key="currentFigure.id" :figure="currentFigure" />
+
       <div class="player" :class="{ 'player-placeholder': !videoUrl && !currentFigure.videoFileId }">
         <ProtectedMedia v-if="currentFigure.videoFileId" :file-id="currentFigure.videoFileId" kind="video"
           :title="`Video: ${currentFigure.nome}`" />
@@ -172,6 +178,8 @@ onBeforeUnmount(() => animationContext?.revert())
   padding: clamp(0.75rem, 4vw, 2.5rem) 0 1rem;
   max-width: 960px;
 }
+
+.figure-description { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .back {
   display: inline-flex;
