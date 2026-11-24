@@ -9,7 +9,7 @@ const paths = {
   download: 'M12 3v12 M7 10l5 5 5-5 M4 17v4h16v-4',
   trash: 'M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7',
   youtube: 'M3 5h18v14H3z M10 9l5 3-5 3z',
-  linkedin: 'M4 9v11 M4 4v.01 M9 20V9h5v3 M14 20v-7a3 3 0 0 1 6 0v7',
+  linkedin: 'M3 3h18v18H3z M8 11v6 M8 8v.01 M12 17v-6 M12 13a2.5 2.5 0 0 1 5 0v4',
   github: 'M9 21v-3c-4 1-4-2-6-2 M15 21v-4c0-1 .5-2 1-2 4-.5 5-2 5-5a5 5 0 0 0-1-3c.3-1 .3-2-.2-3-2 0-3 1-3 1a11 11 0 0 0-10 0S6 4 4 4c-.5 1-.5 2-.2 3A5 5 0 0 0 3 10c0 3 1 4.5 5 5 .5 0 1 1 1 2',
   grid: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
   library: 'M4 5h16v15H4z M8 5V3h8v2 M8 10h8 M8 14h5',
