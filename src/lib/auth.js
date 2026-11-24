@@ -1,7 +1,6 @@
 import { ID, OAuthProvider } from 'appwrite'
 import { reactive, computed } from 'vue'
 import { account } from './appwrite.js'
-import { ensureUserRole } from './roles.js'
 
 const state = reactive({ user: null, error: '' })
 let loading = null
@@ -20,7 +19,6 @@ async function loadUser() {
     const user = await account.get()
     if (request === generation) {
       state.user = user
-      ensureUserRole(user).catch((cause) => console.error('User role sync failed', cause))
     }
   } catch (error) {
     if (request !== generation) return

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { after, afterEach, beforeEach, mock, test } from 'node:test'
+import { after, afterEach, mock, test } from 'node:test'
 import { createServer } from 'vite'
 
 const server = await createServer({
@@ -9,7 +9,7 @@ const server = await createServer({
   server: { middlewareMode: true },
   appType: 'custom',
 })
-const { account, storage, tablesDB } = await server.ssrLoadModule('/src/lib/appwrite.js')
+const { account, functions, storage, tablesDB } = await server.ssrLoadModule('/src/lib/appwrite.js')
 const auth = await server.ssrLoadModule('/src/lib/auth.js')
 const {
   listFigures,
@@ -19,10 +19,10 @@ const {
   MAX_MEDIA_SIZE,
 } = await server.ssrLoadModule('/src/lib/figures.js')
 const { ANALYTICS_EVENTS } = await server.ssrLoadModule('/src/lib/analytics.js')
+const roles = await server.ssrLoadModule('/src/lib/roles.js')
 const catalog = await server.ssrLoadModule('/src/data/danze.js')
 
 afterEach(() => mock.restoreAll())
-beforeEach(() => mock.method(tablesDB, 'getRow', async () => ({ $id: 'member' })))
 after(() => server.close())
 
 test('signup rejects mismatched confirmation before creating an account', async () => {
@@ -37,7 +37,6 @@ test('signup creates a session and derives admin only from server labels', async
   const create = mock.method(account, 'create', async () => {})
   const session = mock.method(account, 'createEmailPasswordSession', async () => {})
   const get = mock.method(account, 'get', async () => ({ $id: 'member', labels: [], prefs: { role: 'admin' } }))
-  mock.method(tablesDB, 'getRow', async () => ({ $id: 'member' }))
   await auth.registerWithEmail({
     name: 'Test', email: 'test@example.com', password: 'matching-password', confirmPassword: 'matching-password',
   })
@@ -84,6 +83,39 @@ test('figure listing paginates beyond 100 rows', async () => {
   assert.equal(result.at(-1).id, 'last')
   assert.equal(list.mock.callCount(), 2)
   assert.ok(list.mock.calls[1].arguments[0].queries.some(query => query.includes('cursorAfter')))
+})
+
+test('user management delegates listing and role changes to the Appwrite Function', async () => {
+  const calls = []
+  mock.method(functions, 'createExecution', async params => {
+    calls.push(params)
+    return {
+      status: 'completed',
+      responseStatusCode: 200,
+      responseBody: JSON.stringify({ users: [{ $id: 'user-1', role: 'user' }] }),
+    }
+  })
+
+  const result = await roles.listUsers()
+  await roles.setUserRole('user-1', 'admin')
+
+  assert.deepEqual(result, [{ $id: 'user-1', role: 'user' }])
+  assert.equal(calls.length, 2)
+  assert.equal(calls[0].functionId, 'dance-user-management')
+  assert.deepEqual(JSON.parse(calls[0].body), { action: 'list' })
+  assert.deepEqual(JSON.parse(calls[1].body), { action: 'set-role', userId: 'user-1', role: 'admin' })
+  assert.equal(calls[0].headers['Content-Type'], 'application/json')
+  assert.equal(calls[0].async, false)
+})
+
+test('user management reports function errors to its caller', async () => {
+  mock.method(functions, 'createExecution', async () => ({
+    status: 'completed',
+    responseStatusCode: 403,
+    responseBody: JSON.stringify({ error: 'Super admin required.' }),
+  }))
+
+  await assert.rejects(roles.listUsers(), /Super admin required/)
 })
 
 test('analytics events write their type and omit empty figure targets', async () => {

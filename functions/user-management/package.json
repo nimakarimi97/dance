@@ -1,0 +1,9 @@
+{
+  "name": "dance-user-management",
+  "private": true,
+  "type": "module",
+  "main": "main.js",
+  "dependencies": {
+    "node-appwrite": "^32.0.0"
+  }
+}

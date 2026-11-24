@@ -1,10 +1,10 @@
 <script setup>
 import { computed, onMounted, shallowRef } from 'vue'
-import { currentUser } from '../lib/auth.js'
+import { currentUser, isSuperAdmin } from '../lib/auth.js'
 import { figures } from '../data/danze.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
 import { recordAnalyticsEvent } from '../lib/figures.js'
-import { listUserRoles, setUserRole } from '../lib/roles.js'
+import { listUsers, setUserRole } from '../lib/roles.js'
 
 const users = shallowRef(null)
 const error = shallowRef('')
@@ -22,18 +22,24 @@ const rows = computed(() => {
 async function load() {
   error.value = ''
   try {
-    users.value = await listUserRoles()
+    users.value = await listUsers()
   } catch (cause) {
     error.value = cause.message || 'Impossibile caricare gli utenti.'
   }
 }
 
 async function changeRole(user, role) {
+  if (!isSuperAdmin.value) {
+    error.value = 'Solo un super admin può modificare i ruoli.'
+    return
+  }
   pending.value = user.$id
   error.value = ''
   try {
     await setUserRole(user.$id, role)
-    user.role = role
+    users.value = users.value.map((entry) =>
+      entry.$id === user.$id ? { ...entry, role } : entry,
+    )
     recordAnalyticsEvent({
       eventType: role === 'admin'
         ? ANALYTICS_EVENTS.ADMIN_ROLE_PROMOTE
@@ -81,14 +87,14 @@ onMounted(load)
           <td>{{ user.figures }}</td>
           <td>
             <button
-              v-if="user.role !== 'admin' && user.role !== 'superadmin'"
+              v-if="isSuperAdmin && user.role !== 'admin' && user.role !== 'superadmin'"
               type="button"
               class="role-action"
               :disabled="pending === user.$id"
               @click="changeRole(user, 'admin')"
             >Promuovi ad admin</button>
             <button
-              v-else-if="user.$id !== currentUser?.$id && user.role === 'admin'"
+              v-else-if="isSuperAdmin && user.$id !== currentUser?.$id && user.role === 'admin'"
               type="button"
               class="role-action"
               :disabled="pending === user.$id"
