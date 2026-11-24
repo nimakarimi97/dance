@@ -1,0 +1,8 @@
+{
+  "name": "dance-practice",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "node-appwrite": "32.0.0"
+  }
+}
