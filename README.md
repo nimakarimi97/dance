@@ -17,7 +17,7 @@ La configurazione pubblica predefinita punta al progetto `dance-salsa-bachata` n
 
 - Registrazione con nome, email, password e conferma password; accesso automatico dopo la registrazione.
 - Accesso email/password oppure Google, se il provider è configurato nel progetto.
-- Le pagine delle danze e delle figure richiedono una sessione valida. I dati non sono inclusi nel bundle pubblico né memorizzati nella cache della PWA.
+- Le pagine delle danze e delle figure richiedono una sessione valida. I dati non sono inclusi nel bundle pubblico né memorizzati nella cache del service worker. Solo i dettagli testuali salvati esplicitamente dall'utente sono disponibili nella vista locale offline.
 - Il contenuto pubblico è disattivato per impostazione predefinita. Imposta `VITE_FEATURE_PUBLIC_CONTENT=true` solo se vuoi consentire l'accesso ospite e hai configurato di conseguenza i permessi Appwrite; il deploy GitHub Pages forza il valore sicuro `false`.
 - Registra i domini del sito come piattaforme Web in Appwrite (`localhost` per lo sviluppo).
 - Se l'autenticazione è disattivata tramite feature flag, le pagine protette restano inaccessibili.
@@ -27,9 +27,10 @@ La configurazione pubblica predefinita punta al progetto `dance-salsa-bachata` n
 - Database TablesDB: `dance`; tabella: `figures`.
 - Colonne: `nome` (varchar 255, obbligatorio), `danza` (enum salsa/bachata, obbligatorio), `stili` (array varchar 64, obbligatorio), `youtubeId` (varchar 32), `videoFileId` e `imageFileId` (varchar 36).
 - Bucket: `figure-media`, massimo **50.000.000 byte per file**. Video: MP4/WebM/MOV; immagini: JPG/JPEG/PNG/WebP.
-- Tabella e bucket: lettura `users`; creazione/modifica/eliminazione `label:admin` e `label:superadmin`; sicurezza per singola riga/file disattivata per mantenere una politica uniforme. Nessun accesso ospite.
+- Catalogo `figures`: lettura `users`; **nessun permesso di scrittura client**, neppure alle label admin/superadmin. Le modifiche passano dalla Function `dance-library` (`service:"figures"`) con audit. Sicurezza per singola riga disattivata. Bucket: lettura `users`, upload/modifica/eliminazione per `label:admin` e `label:superadmin`, sicurezza per singolo file disattivata. Nessun accesso ospite.
 - Gli utenti registrati hanno il ruolo base Appwrite `users`. Solo la Console o la Function `dance-user-management` (invocabile dai super admin) possono assegnare le label `admin` o `superadmin`; preferenze e form del browser non possono concedere privilegi. Un `superadmin` ha gli stessi diritti di modifica di un `admin`, più la gestione utenti.
-- Gestione utenti tramite Appwrite Function `dance-user-management` (Node.js 22, entrypoint `main.js` in `functions/user-management`). Configura gli scope `users.read` e `users.write` per la chiave runtime della funzione e limita l'esecuzione alla label `superadmin`. La funzione elenca tutti gli account Appwrite e assegna o rimuove le label `admin`/`superadmin`; non esporre chiavi API nel frontend o in variabili `VITE_*`.
+- Gestione utenti tramite Appwrite Function `dance-user-management` (Node.js 22, entrypoint `main.js` in `functions/user-management`). Configura gli scope `users.read`, `users.write`, `rows.read`, `rows.write` per la chiave runtime della funzione e limita l'esecuzione alla label `superadmin`. La funzione elenca gli account e assegna/rimuove le label con audit durevole; vedi il setup admin per il deploy aggiornato. Non esporre chiavi API nel frontend o in variabili `VITE_*`.
+- Il piano Free usa **solo due Function**: `dance-user-management` e `dance-library`. Quest'ultima gestisce pratica personale (`service:"practice"`) e figure/audit (`service:"figures"`), con autorizzazione server separata per ogni richiesta. Configurazione frontend: `VITE_APPWRITE_LIBRARY_FUNCTION_ID=dance-library`.
 - L'autenticazione anonima è disattivata: serve registrarsi o accedere con un account.
 - I JSON in [src/data/](src/data/) contengono solo i metadati pubblici delle danze e degli stili. Le 11 figure iniziali sono state migrate in Appwrite.
 
@@ -38,6 +39,8 @@ La configurazione pubblica predefinita punta al progetto `dance-salsa-bachata` n
 La tabella `figure_views` registra eventi solo per utenti autenticati. Mantieni i permessi di creazione per `users` e di lettura per `label:admin` e `label:superadmin`; le righe non sono leggibili dagli utenti normali. Le colonne sono `figureId` (varchar 36, facoltativa), `userId` (varchar 36, obbligatoria), `eventType` (enum facoltativo, default `figure_view`) e `eventTarget` (varchar 255, facoltativa).
 
 Gli eventi includono visite alle pagine dell'app, aperture delle pagine figura, click sulle schede di danza/figura e sulla navigazione, oltre alle azioni admin riuscite (creazione/modifica figure e cambio ruolo). I record storici senza `eventType` continuano a contare come aperture figura. I click anonimi e gli avvii dei video YouTube esterni non vengono conteggiati.
+
+Questi eventi browser sono telemetria, non una fonte attendibile per audit o autorizzazione. L'audit delle modifiche amministrative è scritto solo dal backend nella tabella dedicata.
 
 ### Aggiungere figure, immagini e video
 
@@ -62,3 +65,13 @@ DNS su Namecheap (Advanced DNS):
 - Tipo `CNAME Record`, Host `dance`, Valore `<tuo-utente>.github.io.`, TTL Automatic.
 
 Il routing usa URL puliti (ad esempio `/danza/salsa`). Il file `public/404.html` ripristina le rotte dirette su GitHub Pages; includilo nel deploy insieme al sito.
+
+## Pratica, ricerca e amministrazione
+
+- **Profilo → La mia pratica**: preferiti, liste personali e raccolte per progresso. Ogni figura permette di salvare note private e uno dei progressi `learning`, `practicing`, `mastered`, oppure nessuno.
+- Ricerca per nome, **alias strutturati** e descrizione, senza distinzione di accenti/maiuscole. Per trovare `70` con `settanta`, inserire `settanta` tra i nomi alternativi nell'editor: non si deducono alias dai numeri.
+- Danza/stile, video e difficoltà sono combinabili; ordinamento per nome naturale (2 prima di 10), difficoltà o aggiornamento. Le figure precedenti senza difficoltà restano valide e filtrabili come “Non indicata”.
+- **Dettagli offline** nelle schede salva solo testo sul dispositivo; le copie sono accessibili da `/offline` anche senza rete. Nessun video o nota privata viene copiato. Browser storage non crittografato; logout/cambio account rimuovono le copie.
+- Audit amministrativo separato dagli analytics e workflow JSON con anteprima/conferma per importazioni e modifiche massive.
+
+**Setup obbligatorio prima del deploy frontend:** [pratica privata e offline](docs/APPWRITE_PRACTICE.md) e [audit, schema catalogo e Function admin](docs/APPWRITE_ADMIN.md). Le risorse Appwrite e le Function non vengono create o distribuite automaticamente dalla build del sito. Non mantenere i vecchi permessi di scrittura diretta del catalogo: le modifiche devono attraversare il backend di audit.
