@@ -6,10 +6,13 @@ import { practiceRequest } from '../lib/practice-api.js'
 import { isOnline } from '../lib/online.js'
 import { browserOfflineLibrary } from '../lib/offline-library.js'
 import { getFigureDetails } from '../lib/figures.js'
+import { isFeatureEnabled } from '../config/features.js'
 import { useUnsavedWarning } from '../lib/unsaved.js'
 import StudioIcon from './StudioIcon.vue'
 
 const props = defineProps({ figure: { type: Object, required: true } })
+const favoritesEnabled = isFeatureEnabled('favorites')
+const offlineEnabled = isFeatureEnabled('offline')
 const favorite = shallowRef(false)
 const progress = shallowRef('')
 const notes = shallowRef('')
@@ -82,7 +85,7 @@ function save() {
       figureId: props.figure.id, favorite: favorite.value, progress: progress.value || null, notes: notes.value,
     })
     baseline.value = value
-  }, 'Preferito, progresso e note salvati.')
+  }, favoritesEnabled ? 'Preferito, progresso e note salvati.' : 'Progresso e note salvati.')
 }
 
 function addToList() {
@@ -125,7 +128,7 @@ onBeforeRouteUpdate(canLeave)
       caricamento</button>
     <form v-if="baseline" @submit.prevent="save">
       <fieldset :disabled="busy || !isOnline">
-        <button type="button" class="favorite-choice" :class="{ saved: favorite }" :aria-pressed="favorite"
+        <button v-if="favoritesEnabled" type="button" class="favorite-choice" :class="{ saved: favorite }" :aria-pressed="favorite"
           @click="favorite = !favorite">
           <StudioIcon name="bookmark" />
           <span>{{ favorite ? 'Nei miei preferiti' : 'Aggiungi ai preferiti' }}</span>
@@ -160,7 +163,7 @@ onBeforeRouteUpdate(canLeave)
       </button>
       <RouterLink class="btn" to="/dashboard?sezione=pratica">Gestisci le mie liste</RouterLink>
     </div>
-    <div class="offline-controls">
+    <div v-if="offlineEnabled" class="offline-controls">
       <h3>Dettagli offline</h3>
       <p v-if="offlineError" role="alert">{{ offlineError }}</p>
       <p v-if="savedAt">Disponibile offline · Copia del {{ new Date(savedAt).toLocaleString('it') }}.</p>

@@ -12,6 +12,7 @@ import InstallGuide from '../components/InstallGuide.vue'
 import StudioIcon from '../components/StudioIcon.vue'
 
 const publicContent = isFeatureEnabled('publicContent')
+const installGuideEnabled = isFeatureEnabled('installGuide')
 
 const root = ref(null)
 let animationContext = null
@@ -110,7 +111,7 @@ function trackDanceClick(danceId) {
 
 <template>
   <main ref="root" class="home container">
-    <InstallGuide />
+    <InstallGuide v-if="installGuideEnabled" />
     <section class="hero">
       <p class="hero-hi script">Benvenuto in pista</p>
       <h1 class="hero-title" translate="no" aria-label="Salsa & Bachata">

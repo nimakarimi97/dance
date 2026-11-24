@@ -3,6 +3,7 @@ import { computed, onMounted, shallowRef, useTemplateRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import { practiceRequest } from '../lib/practice-api.js'
 import { isOnline } from '../lib/online.js'
+import { isFeatureEnabled } from '../config/features.js'
 import PracticeListEditor from './PracticeListEditor.vue'
 import StudioIcon from './StudioIcon.vue'
 
@@ -17,7 +18,10 @@ const loading = shallowRef(true)
 const error = shallowRef('')
 const busy = shallowRef(false)
 const message = shallowRef('')
-const filter = shallowRef('favorites')
+const favoritesEnabled = isFeatureEnabled('favorites')
+const offlineEnabled = isFeatureEnabled('offline')
+const defaultFilter = favoritesEnabled ? 'favorites' : 'learning'
+const filter = shallowRef(defaultFilter)
 const editing = shallowRef(false)
 const selectedList = shallowRef(null)
 const listEditor = useTemplateRef('list-editor')
@@ -64,7 +68,7 @@ async function remove(list) {
   try {
     await practiceRequest('delete-list', { id: list.$id })
     lists.value = lists.value.filter(item => item.$id !== list.$id)
-    if (filter.value === `list:${list.$id}`) filter.value = 'favorites'
+    if (filter.value === `list:${list.$id}`) filter.value = defaultFilter
     message.value = 'Lista eliminata.'
   } catch (cause) {
     error.value = cause.message
@@ -92,9 +96,9 @@ async function remove(list) {
   <section class="personal-practice" aria-labelledby="personal-title">
     <header>
       <h2 id="personal-title">
-        <StudioIcon name="bookmark" /> Preferiti e liste
+        <StudioIcon name="bookmark" /> {{ favoritesEnabled ? 'Preferiti e liste' : 'Liste e progressi' }}
       </h2>
-      <RouterLink class="btn" to="/offline">
+      <RouterLink v-if="offlineEnabled" class="btn" to="/offline">
         <StudioIcon name="download" />Copie offline
       </RouterLink>
     </header>
@@ -105,7 +109,7 @@ async function remove(list) {
     <template v-if="!loading && !error">
       <label>Mostra
         <select v-model="filter">
-          <option value="favorites">Preferiti</option>
+          <option v-if="favoritesEnabled" value="favorites">Preferiti</option>
           <option v-for="(label, state) in progressLabels" :key="state" :value="state">{{ label }}</option>
           <option v-for="list in lists" :key="list.$id" :value="`list:${list.$id}`">Lista · {{ list.name }}</option>
         </select>

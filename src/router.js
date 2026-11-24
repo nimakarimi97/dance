@@ -16,7 +16,7 @@ export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', name: 'home', component: HomeView },
-    { path: '/offline', name: 'offline', component: OfflineView },
+    { path: '/offline', name: 'offline', component: OfflineView, meta: { feature: 'offline' } },
     { path: '/danza/:danza', name: 'danza', component: DanzaView, props: true, meta: { requiresAuth: contentRequiresAuth } },
     { path: '/figura/:figura', name: 'figura', component: FiguraView, props: true, meta: { requiresAuth: contentRequiresAuth } },
     { path: '/auth', name: 'auth', component: AuthView, meta: { feature: 'auth', guestOnly: true } },

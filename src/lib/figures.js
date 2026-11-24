@@ -2,6 +2,7 @@ import { ID, Query } from 'appwrite'
 import { appwriteConfig, client, storage, tablesDB } from './appwrite.js'
 import { ANALYTICS_EVENTS } from './analytics.js'
 import { saveAdminFigure } from './admin-api.js'
+import { isFeatureEnabled } from '../config/features.js'
 
 const table = () => ({
   databaseId: appwriteConfig.databaseId,
@@ -35,7 +36,7 @@ export async function recordFigureView(figureId, userId) {
 }
 
 export async function recordAnalyticsEvent({ eventType, userId, figureId, eventTarget }) {
-  if (!userId) return
+  if (!userId || !isFeatureEnabled('analytics')) return
   const data = { eventType, userId }
   if (figureId) data.figureId = figureId
   if (eventTarget) data.eventTarget = eventTarget

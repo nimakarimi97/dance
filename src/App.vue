@@ -13,6 +13,8 @@ import { initializeTheme, isDarkMode, themeError } from './lib/theme.js'
 
 const route = useRoute()
 const authEnabled = isFeatureEnabled('auth')
+const offlineEnabled = isFeatureEnabled('offline')
+const themeEnabled = isFeatureEnabled('theme')
 const danceList = Object.values(dances)
 const baseTitle = 'Salsa & Bachata · Figure'
 const copyrightYears = new Date().getFullYear()
@@ -99,7 +101,7 @@ function trackNavigation(target) {
         <span class="brand-name" translate="no">Salsa &amp; Bachata</span>
       </RouterLink>
       <div class="header-actions">
-        <ThemeSwitch :model-value="isDarkMode" @update:model-value="themeController.setDarkMode" />
+        <ThemeSwitch v-if="themeEnabled" :model-value="isDarkMode" @update:model-value="themeController.setDarkMode" />
         <RouterLink v-if="authEnabled" class="user-link"
           :class="{ 'user-link--on': route.name === 'dashboard' && route.query.sezione === 'account' }"
           :to="isLoggedIn ? { name: 'dashboard', query: { sezione: 'account' } } : { name: 'auth' }"
@@ -117,8 +119,7 @@ function trackNavigation(target) {
         </RouterLink>
         <RouterLink v-for="dance in danceList" :key="dance.id" :to="{ name: 'danza', params: { danza: dance.id } }"
           class="tab" :class="{ 'tab-on': activeDance === dance.id }" :data-dance="dance.id"
-          @click="trackNavigation(`dance:${dance.id}`)"
-          :aria-current="activeDance === dance.id ? 'page' : undefined">
+          @click="trackNavigation(`dance:${dance.id}`)" :aria-current="activeDance === dance.id ? 'page' : undefined">
           <StudioIcon name="dance" />
           <span>{{ dance.nome }}</span>
         </RouterLink>
@@ -133,7 +134,10 @@ function trackNavigation(target) {
     </header>
     <p v-if="themeError" class="theme-notice" role="status">{{ themeError }}</p>
     <p v-if="!isOnline" class="offline" role="status">
-      Sei offline. <RouterLink to="/offline">Apri i dettagli salvati per la pratica</RouterLink>. I video richiedono una connessione.
+      Sei offline.<template v-if="offlineEnabled">
+        <RouterLink to="/offline">Apri i dettagli salvati per la pratica</RouterLink>.
+      </template>
+      I video richiedono una connessione.
     </p>
     <p v-if="authError && route.name !== 'auth'" class="offline" role="alert">
       {{ authError }}
@@ -149,12 +153,14 @@ function trackNavigation(target) {
       <div class="footer-intro">
         <span class="script footer-brand">Salsa &amp; Bachata</span>
         <p class="copyright">
-          © {{ copyrightYears }} <a href="https://nimakarimi.me" target="_blank" rel="noopener noreferrer">Nima Karimi</a>
+          © {{ copyrightYears }} <a href="https://nimakarimi.me" target="_blank" rel="noopener noreferrer">Nima
+            Karimi</a>
         </p>
       </div>
       <div class="footer-connect">
         <nav class="social-links" aria-label="Segui Nima Karimi">
-          <a v-for="social in socialLinks" :key="social.name" :href="social.url" target="_blank" rel="noopener noreferrer">
+          <a v-for="social in socialLinks" :key="social.name" :href="social.url" target="_blank"
+            rel="noopener noreferrer">
             <StudioIcon :name="social.icon" /><span>{{ social.name }}</span>
           </a>
         </nav>
@@ -228,12 +234,42 @@ function trackNavigation(target) {
   object-fit: cover;
 }
 
-.header-actions { display: flex; align-items: center; gap: 0.5rem; }
-.user-link { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 50%; color: var(--text); }
-.user-link:hover { background: var(--ink-3); }
-.user-link--on { border-color: var(--accent-text); color: var(--accent-text); background: var(--brand-soft); }
-.app > main { flex: 1 0 auto; }
-.theme-notice { margin: 0; padding: 0.75rem 1rem; background: var(--brand-soft); color: var(--text); }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-link {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--text);
+}
+
+.user-link:hover {
+  background: var(--ink-3);
+}
+
+.user-link--on {
+  border-color: var(--accent-text);
+  color: var(--accent-text);
+  background: var(--brand-soft);
+}
+
+.app>main {
+  flex: 1 0 auto;
+}
+
+.theme-notice {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: var(--brand-soft);
+  color: var(--text);
+}
 
 .offline {
   margin: 0;
@@ -271,14 +307,47 @@ function trackNavigation(target) {
   text-underline-offset: 4px;
 }
 
-.footer-brand { font-size: 2rem; font-weight: 700; color: var(--text); }
-.footer-intro p { margin: 0.25rem 0 0; }
-.footer-intro, .footer-connect { min-width: 0; }
-.social-links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.social-links a { text-decoration: none; padding-inline: 0.75rem; border: 1px solid var(--line); border-radius: 0.75rem; }
-.social-links a:hover { background: var(--ink-3); color: var(--brand-text); }
-.footer-contact { margin: 0.75rem 0 0; }
-.footer-contact a { padding-inline: 0; overflow-wrap: anywhere; }
+.footer-brand {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.footer-intro p {
+  margin: 0.25rem 0 0;
+}
+
+.footer-intro,
+.footer-connect {
+  min-width: 0;
+}
+
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.social-links a {
+  text-decoration: none;
+  padding-inline: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.social-links a:hover {
+  background: var(--ink-3);
+  color: var(--brand-text);
+}
+
+.footer-contact {
+  margin: 0.75rem 0 0;
+}
+
+.footer-contact a {
+  padding-inline: 0;
+  overflow-wrap: anywhere;
+}
 
 .copyright {
   margin: 0;
@@ -341,7 +410,10 @@ function trackNavigation(target) {
     border: 0;
   }
 
-  .header-actions { order: 2; }
+  .header-actions {
+    order: 2;
+  }
+
   .tab {
     flex-direction: row;
     gap: 0.5rem;
@@ -355,13 +427,25 @@ function trackNavigation(target) {
     background: var(--ink-3);
   }
 
-  .footer { padding-bottom: 2rem; }
+  .footer {
+    padding-bottom: 2rem;
+  }
 }
 
 @media (min-width: 640px) {
-  .footer { flex-direction: row; align-items: flex-start; }
-  .footer-connect { text-align: right; max-width: 34rem; }
-  .social-links { justify-content: flex-end; }
+  .footer {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .footer-connect {
+    text-align: right;
+    max-width: 34rem;
+  }
+
+  .social-links {
+    justify-content: flex-end;
+  }
 }
 
 .page-enter-active,

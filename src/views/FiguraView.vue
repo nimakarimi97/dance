@@ -4,11 +4,14 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { findDance, findFigure, getFiguresForDance, useFigureCatalog } from '../data/danze.js'
 import { currentUser } from '../lib/auth.js'
+import { isFeatureEnabled } from '../config/features.js'
 import { recordFigureView } from '../lib/figures.js'
 import { isOnline } from '../lib/online.js'
 import { canAnimate } from '../lib/motion.js'
 import ProtectedMedia from '../components/ProtectedMedia.vue'
 import FigurePractice from '../components/FigurePractice.vue'
+
+const practiceEnabled = isFeatureEnabled('practice')
 
 const props = defineProps({ figura: { type: String, required: true } })
 const { loading, error, retry } = useFigureCatalog()
@@ -151,7 +154,7 @@ onBeforeUnmount(() => animationContext?.revert())
 
       <ProtectedMedia v-if="currentFigure.imageFileId" :file-id="currentFigure.imageFileId" kind="image"
         :title="currentFigure.nome" />
-      <FigurePractice v-if="currentUser" :key="currentFigure.id" :figure="currentFigure" />
+      <FigurePractice v-if="currentUser && practiceEnabled" :key="currentFigure.id" :figure="currentFigure" />
       <nav class="pager" aria-label="Figure precedenti e successive">
         <RouterLink v-if="previousFigure" :to="{ name: 'figura', params: { figura: previousFigure.id } }"
           class="pager-link">

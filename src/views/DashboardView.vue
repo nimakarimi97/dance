@@ -5,6 +5,7 @@ import { currentUser, isAdmin, isSuperAdmin, signOut } from '../lib/auth.js'
 import { figures, refreshFigures, useFigureCatalog } from '../data/danze.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
 import { recordAnalyticsEvent } from '../lib/figures.js'
+import { isFeatureEnabled } from '../config/features.js'
 import DashboardCatalog from '../components/DashboardCatalog.vue'
 import AdminUserRoles from '../components/AdminUserRoles.vue'
 import FigureEditor from '../components/FigureEditor.vue'
@@ -26,7 +27,19 @@ const savedId = shallowRef('')
 const videoFilter = shallowRef('all')
 const sectionHeading = useTemplateRef('section-heading')
 const personalPractice = useTemplateRef('personal-practice')
-const activeSection = shallowRef(isAdmin.value ? 'panoramica' : 'pratica')
+const practiceEnabled = isFeatureEnabled('practice')
+const catalogEnabled = isFeatureEnabled('catalog')
+const figureEditorEnabled = isFeatureEnabled('figureEditor')
+const adminOperationsEnabled = isFeatureEnabled('adminOperations')
+const analyticsEnabled = isFeatureEnabled('analytics')
+const userRolesEnabled = isFeatureEnabled('userRoles')
+const favoritesEnabled = isFeatureEnabled('favorites')
+
+function defaultSection() {
+  return isAdmin.value || !practiceEnabled ? 'panoramica' : 'pratica'
+}
+
+const activeSection = shallowRef(defaultSection())
 const sectionTitles = {
   panoramica: 'Panoramica',
   pratica: 'La mia pratica',
@@ -40,7 +53,9 @@ const sectionTitle = computed(() => activeSection.value === 'catalogo' && !isAdm
   ? 'Esplora figure' : sectionTitles[activeSection.value])
 const sectionDescriptions = {
   panoramica: 'Panoramica del repertorio e progressi video.',
-  pratica: 'Preferiti, liste personali e progressi di apprendimento.',
+  pratica: favoritesEnabled
+    ? 'Preferiti, liste personali e progressi di apprendimento.'
+    : 'Liste personali e progressi di apprendimento.',
   operazioni: 'Modifiche massive, importazione con anteprima e audit amministrativo.',
   catalogo: 'Gestisci figure, video e contenuti del catalogo.',
   visualizzazioni: 'Monitora trend e performance delle figure.',
@@ -53,16 +68,12 @@ const sectionDescription = computed(
     : sectionDescriptions[activeSection.value] || 'Gestisci il tuo spazio personale.',
 )
 const sectionItems = computed(() => {
-  const items = [
-    { id: 'panoramica', label: 'Panoramica', icon: 'grid' },
-    { id: 'pratica', label: 'La mia pratica', icon: 'music' },
-    { id: 'catalogo', label: isAdmin.value ? 'Catalogo' : 'Esplora figure', icon: 'library' },
-  ]
-  if (isAdmin.value) items.push(
-    { id: 'operazioni', label: 'Import e audit', icon: 'edit' },
-    { id: 'visualizzazioni', label: 'Analytics', icon: 'video' },
-  )
-  if (isSuperAdmin.value) items.push({ id: 'utenti', label: 'Utenti', icon: 'user' })
+  const items = [{ id: 'panoramica', label: 'Panoramica', icon: 'grid' }]
+  if (practiceEnabled) items.push({ id: 'pratica', label: 'La mia pratica', icon: 'music' })
+  if (catalogEnabled) items.push({ id: 'catalogo', label: isAdmin.value ? 'Catalogo' : 'Esplora figure', icon: 'library' })
+  if (isAdmin.value && adminOperationsEnabled) items.push({ id: 'operazioni', label: 'Import e audit', icon: 'edit' })
+  if (isAdmin.value && analyticsEnabled) items.push({ id: 'visualizzazioni', label: 'Analytics', icon: 'video' })
+  if (isSuperAdmin.value && userRolesEnabled) items.push({ id: 'utenti', label: 'Utenti', icon: 'user' })
   return items
 })
 let editorTrigger = null
@@ -99,7 +110,7 @@ onBeforeRouteUpdate((to) => {
 })
 watch(() => route.query.sezione, async (section) => {
   const id = section === 'account' || sectionItems.value.some(item => item.id === section)
-    ? section : isAdmin.value ? 'panoramica' : 'pratica'
+    ? section : defaultSection()
   if (id === activeSection.value) return
   if (currentUser.value?.$id) {
     recordAnalyticsEvent({
@@ -115,7 +126,7 @@ watch(() => route.query.sezione, async (section) => {
 }, { immediate: true })
 
 function openEditor(figure = null) {
-  if (!isAdmin.value) return
+  if (!isAdmin.value || !figureEditorEnabled) return
   editorTrigger = document.activeElement
   selectedFigure.value = figure
   savedId.value = ''
@@ -240,7 +251,7 @@ async function signOutUser() {
                       : 'Il primo video darà vita al tuo catalogo.'
               }}
             </p>
-            <button v-if="missingVideo && !loading && !error" type="button" class="text-action"
+            <button v-if="catalogEnabled && missingVideo && !loading && !error" type="button" class="text-action"
               @click="showMissingVideos">
               Vedi le figure senza video
               <StudioIcon name="arrow" />
@@ -248,14 +259,14 @@ async function signOutUser() {
           </section>
         </div>
         <AdminAnalyticsSnapshot
-          v-if="isAdmin"
+          v-if="isAdmin && analyticsEnabled"
           @open-analytics="showSection('visualizzazioni')"
         />
 
       </template>
 
       <DashboardCatalog v-if="activeSection === 'catalogo'" :figures="figures" :loading="loading" :error="error"
-        :admin="isAdmin" :user-id="currentUser?.$id" v-model:video-filter="videoFilter" @create="openEditor()"
+        :admin="isAdmin && figureEditorEnabled" :user-id="currentUser?.$id" v-model:video-filter="videoFilter" @create="openEditor()"
         @edit="openEditor" @retry="retry" />
 
       <PersonalPractice v-if="activeSection === 'pratica'" ref="personal-practice" :figures="figures" :catalog-loading="loading" :catalog-error="error" />
