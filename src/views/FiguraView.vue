@@ -1,8 +1,9 @@
 <script setup>
 import { gsap } from 'gsap'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
-import { findDance, findFigure, getFiguresForDance, useFigureCatalog } from '../data/danze.js'
+import { RouterLink, useRoute } from 'vue-router'
+import { findDance, findFigure, getFiguresForDance, guestPreviewActive, isFigureLocked, registerPreviewFigure, useFigureCatalog } from '../data/danze.js'
+import { GUEST_PREVIEW_LIMIT } from '../config/features.js'
 import { currentUser } from '../lib/auth.js'
 import { recordFigureView } from '../lib/figures.js'
 import { isOnline } from '../lib/online.js'
@@ -10,9 +11,11 @@ import { canAnimate } from '../lib/motion.js'
 import ProtectedMedia from '../components/ProtectedMedia.vue'
 
 const props = defineProps({ figura: { type: String, required: true } })
+const route = useRoute()
 const { loading, error, retry } = useFigureCatalog()
 
 const currentFigure = computed(() => findFigure(props.figura))
+const locked = computed(() => Boolean(currentFigure.value) && isFigureLocked(props.figura))
 const dance = computed(() => (currentFigure.value ? findDance(currentFigure.value.danza) : null))
 const figureStyles = computed(() =>
   currentFigure.value && dance.value
@@ -83,6 +86,7 @@ watch(
   (figureId) => {
     const userId = currentUser.value?.$id
     if (figureId && userId) recordFigureView(figureId, userId)
+    if (figureId && guestPreviewActive.value) registerPreviewFigure(figureId)
   },
   { immediate: true },
 )
@@ -116,33 +120,44 @@ onBeforeUnmount(() => animationContext?.revert())
         </div>
       </header>
 
-      <div class="player" :class="{ 'player-placeholder': !videoUrl && !currentFigure.videoFileId }">
-        <ProtectedMedia v-if="currentFigure.videoFileId" :file-id="currentFigure.videoFileId" kind="video"
-          :title="`Video: ${currentFigure.nome}`" />
-        <template v-else-if="videoUrl">
-          <div v-if="!videoLoaded" class="skeleton player-loading" role="status">
-            <span class="visually-hidden">Caricamento del video…</span>
+      <section v-if="locked" class="gate" role="status">
+        <h2 class="script">Anteprima terminata</h2>
+        <p>Hai aperto le {{ GUEST_PREVIEW_LIMIT }} figure di anteprima. Accedi per vedere video e figure complete.</p>
+        <RouterLink :to="{ name: 'auth', query: { redirect: route.fullPath } }" class="btn btn-primary">
+          Accedi
+        </RouterLink>
+      </section>
+
+      <template v-else>
+        <div class="player" :class="{ 'player-placeholder': !videoUrl && !currentFigure.videoFileId }">
+          <ProtectedMedia v-if="currentFigure.videoFileId" :file-id="currentFigure.videoFileId" kind="video"
+            :title="`Video: ${currentFigure.nome}`" />
+          <template v-else-if="videoUrl">
+            <div v-if="!videoLoaded" class="skeleton player-loading" role="status">
+              <span class="visually-hidden">Caricamento del video…</span>
+            </div>
+            <iframe :key="videoUrl" :src="videoUrl" :title="`Video: ${currentFigure.nome}`"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin" allowfullscreen @load="videoLoaded = true" />
+          </template>
+          <div v-else class="placeholder-body">
+            <p class="script">Video in arrivo</p>
+            <p class="placeholder-note">Per ora puoi provare la figura con le altre {{ dance.nome }}.</p>
           </div>
-          <iframe :key="videoUrl" :src="videoUrl" :title="`Video: ${currentFigure.nome}`"
-            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerpolicy="strict-origin-when-cross-origin" allowfullscreen @load="videoLoaded = true" />
-        </template>
-        <div v-else class="placeholder-body">
-          <p class="script">Video in arrivo</p>
-          <p class="placeholder-note">Per ora puoi provare la figura con le altre {{ dance.nome }}.</p>
         </div>
-      </div>
 
-      <p v-if="videoUrl && !isOnline" class="video-note" role="status">
-        Sei offline: il video non si carica. Riprova quando torni online.
-      </p>
-      <a v-else-if="youtubeLink && !currentFigure.videoFileId" :href="youtubeLink" class="video-note yt" target="_blank"
-        rel="noopener">
-        Il video non parte? Aprilo su YouTube
-      </a>
+        <p v-if="videoUrl && !isOnline" class="video-note" role="status">
+          Sei offline: il video non si carica. Riprova quando torni online.
+        </p>
+        <a v-else-if="youtubeLink && !currentFigure.videoFileId" :href="youtubeLink" class="video-note yt" target="_blank"
+          rel="noopener">
+          Il video non parte? Aprilo su YouTube
+        </a>
 
-      <ProtectedMedia v-if="currentFigure.imageFileId" :file-id="currentFigure.imageFileId" kind="image"
-        :title="currentFigure.nome" />
+        <ProtectedMedia v-if="currentFigure.imageFileId" :file-id="currentFigure.imageFileId" kind="image"
+          :title="currentFigure.nome" />
+      </template>
+
       <nav class="pager" aria-label="Figure precedenti e successive">
         <RouterLink v-if="previousFigure" :to="{ name: 'figura', params: { figura: previousFigure.id } }"
           class="pager-link">
@@ -262,6 +277,32 @@ onBeforeUnmount(() => animationContext?.revert())
 .placeholder-note {
   margin: 0.25rem 0 0;
   color: var(--muted);
+}
+
+.gate {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--ink-2);
+}
+
+.gate h2 {
+  margin: 0;
+  font-size: clamp(2.6rem, 9vw, 4rem);
+  line-height: 1;
+  color: var(--gold);
+}
+
+.gate p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.gate .btn {
+  margin-top: 0.5rem;
 }
 
 .video-note {

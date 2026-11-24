@@ -9,7 +9,7 @@ import DashboardView from './views/DashboardView.vue'
 import FiguraView from './views/FiguraView.vue'
 import HomeView from './views/HomeView.vue'
 
-const contentRequiresAuth = !isFeatureEnabled('publicContent')
+const contentRequiresAuth = !isFeatureEnabled('publicContent') && !isFeatureEnabled('guestPreview')
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
