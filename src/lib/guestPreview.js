@@ -10,7 +10,7 @@ export function readPreviewFigures(raw, limit) {
 }
 
 export function canOpenPreviewFigure(viewed, figureId, limit) {
-  return viewed.includes(figureId) || viewed.length < limit
+  return viewed.length < limit
 }
 
 export function addPreviewFigure(viewed, figureId, limit) {

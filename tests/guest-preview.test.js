@@ -9,10 +9,11 @@ test('stored preview ids are sanitized, deduplicated and capped', () => {
   assert.deepEqual(readPreviewFigures(null, 3), [])
 })
 
-test('guests keep access to figures they already opened but not to new ones past the limit', () => {
+test('guests cannot open any figure after reaching the preview limit', () => {
   const viewed = ['a', 'b', 'c']
-  assert.equal(canOpenPreviewFigure(viewed, 'b', 3), true)
+  assert.equal(canOpenPreviewFigure(viewed, 'b', 3), false)
   assert.equal(canOpenPreviewFigure(viewed, 'd', 3), false)
+  assert.equal(canOpenPreviewFigure(['a', 'b'], 'a', 3), true)
   assert.equal(canOpenPreviewFigure(['a'], 'd', 3), true)
 })
 
