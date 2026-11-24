@@ -5,6 +5,7 @@ import { figures } from '../data/danze.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
 import { recordAnalyticsEvent } from '../lib/figures.js'
 import { listUsers, setUserRole } from '../lib/roles.js'
+import StudioLoader from './StudioLoader.vue'
 
 const users = shallowRef(null)
 const error = shallowRef('')
@@ -71,7 +72,7 @@ onMounted(load)
     </header>
 
     <p v-if="error" class="roles-error" role="alert">{{ error }}</p>
-    <p v-if="!users && !error" aria-busy="true">Caricamento utenti…</p>
+    <StudioLoader v-if="!users && !error" label="Caricamento utenti…" />
     <table v-else-if="users">
       <thead>
         <tr>
@@ -89,23 +90,16 @@ onMounted(load)
             <span class="user-email">{{ user.email || '—' }}</span>
           </td>
           <td>{{ user.email || '—' }}</td>
-          <td><span class="role-badge" :class="`role-${user.role}`">{{ user.role === 'superadmin' ? 'Super admin' : user.role === 'admin' ? 'Admin' : 'Utente' }}</span></td>
+          <td><span class="role-badge" :class="`role-${user.role}`">{{ user.role === 'superadmin' ? 'Super admin' :
+            user.role === 'admin' ? 'Admin' : 'Utente' }}</span></td>
           <td>{{ user.figures }}</td>
           <td>
-            <button
-              v-if="isSuperAdmin && user.role !== 'admin' && user.role !== 'superadmin'"
-              type="button"
-              class="role-action"
-              :disabled="pending === user.$id"
-              @click="changeRole(user, 'admin')"
-            >Promuovi ad admin</button>
-            <button
-              v-else-if="isSuperAdmin && user.$id !== currentUser?.$id && user.role === 'admin'"
-              type="button"
-              class="role-action"
-              :disabled="pending === user.$id"
-              @click="changeRole(user, 'user')"
-            >Retrocedi a utente</button>
+            <button v-if="isSuperAdmin && user.role !== 'admin' && user.role !== 'superadmin'" type="button"
+              class="role-action" :disabled="pending === user.$id" @click="changeRole(user, 'admin')">Promuovi ad
+              admin</button>
+            <button v-else-if="isSuperAdmin && user.$id !== currentUser?.$id && user.role === 'admin'" type="button"
+              class="role-action" :disabled="pending === user.$id" @click="changeRole(user, 'user')">Retrocedi a
+              utente</button>
           </td>
         </tr>
         <tr v-if="!rows.length">
@@ -132,7 +126,7 @@ onMounted(load)
 }
 
 .user-roles header p,
-.user-roles > p {
+.user-roles>p {
   margin: 0.4rem 0 1rem;
   color: var(--studio-muted);
   font-size: 0.88rem;

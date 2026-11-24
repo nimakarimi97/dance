@@ -3,6 +3,7 @@ import { computed, onMounted, shallowRef } from 'vue'
 import { dances, figures } from '../data/danze.js'
 import { buildEventTimeline, summarizeViews } from '../lib/analytics.js'
 import { listAnalyticsEvents } from '../lib/figures.js'
+import StudioLoader from './StudioLoader.vue'
 
 const emit = defineEmits(['open-analytics'])
 const events = shallowRef(null)
@@ -67,9 +68,7 @@ onMounted(load)
       {{ error }}
       <button type="button" class="snapshot-retry" @click="load">Riprova</button>
     </p>
-    <p v-else-if="loading" class="snapshot-loading" role="status" aria-busy="true">
-      Caricamento delle attività…
-    </p>
+    <StudioLoader v-else-if="loading" compact label="Caricamento delle attività…" />
     <div v-else class="snapshot-content">
       <div class="snapshot-stats" aria-label="Riepilogo attività">
         <article>
@@ -111,7 +110,12 @@ onMounted(load)
         <table class="visually-hidden">
           <caption>Attività per giorno</caption>
           <thead>
-            <tr><th scope="col">Giorno</th><th scope="col">Visite</th><th scope="col">Click</th><th scope="col">Azioni admin</th></tr>
+            <tr>
+              <th scope="col">Giorno</th>
+              <th scope="col">Visite</th>
+              <th scope="col">Click</th>
+              <th scope="col">Azioni admin</th>
+            </tr>
           </thead>
           <tbody>
             <tr v-for="day in daily" :key="day.label">
@@ -237,9 +241,17 @@ onMounted(load)
   background: currentColor;
 }
 
-.legend-views { color: var(--brand-text); }
-.legend-clicks { color: var(--info); }
-.legend-admin { color: var(--warning); }
+.legend-views {
+  color: var(--brand-text);
+}
+
+.legend-clicks {
+  color: var(--info);
+}
+
+.legend-admin {
+  color: var(--warning);
+}
 
 .snapshot-chart {
   display: grid;
@@ -290,19 +302,22 @@ onMounted(load)
   flex: 0 0 auto;
 }
 
-.bar-admin { background: var(--warning); }
-.bar-clicks { background: var(--info); }
-.bar-views { background: var(--brand-text); }
+.bar-admin {
+  background: var(--warning);
+}
 
-.snapshot-error,
-.snapshot-loading {
-  margin: 1rem 0 0;
-  color: var(--studio-muted);
-  font-size: 0.875rem;
+.bar-clicks {
+  background: var(--info);
+}
+
+.bar-views {
+  background: var(--brand-text);
 }
 
 .snapshot-error {
+  margin: 1rem 0 0;
   color: var(--warning);
+  font-size: 0.875rem;
 }
 
 .snapshot-retry {

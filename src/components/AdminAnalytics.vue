@@ -18,6 +18,7 @@ import { dances, figures } from '../data/danze.js'
 import { buildEventTimeline, summarizeViews } from '../lib/analytics.js'
 import { listAnalyticsEvents } from '../lib/figures.js'
 import { isDarkMode } from '../lib/theme.js'
+import StudioLoader from './StudioLoader.vue'
 
 ChartJS.register(
   CategoryScale, LinearScale, LineElement, PointElement, BarElement,
@@ -248,7 +249,8 @@ onMounted(load)
         <p class="analytics-kicker">Il ritmo del tuo studio</p>
         <h2 id="analytics-title">La pista, in numeri</h2>
         <p class="analytics-intro">Visite, click e azioni nel repertorio.</p>
-        <p class="analytics-note">Conteggi per utenti autenticati; gli avvii dei video YouTube esterni non sono inclusi.</p>
+        <p class="analytics-note">Conteggi per utenti autenticati; gli avvii dei video YouTube esterni non sono inclusi.
+        </p>
       </div>
       <div class="live-note"><span aria-hidden="true"></span>Dati caricati</div>
     </header>
@@ -257,28 +259,22 @@ onMounted(load)
       {{ error }}
       <button type="button" class="retry-button" @click="load">Riprova</button>
     </p>
-    <p v-else-if="loading" class="analytics-state" role="status" aria-busy="true">
-      Caricamento delle attività…
-    </p>
+    <StudioLoader v-else-if="loading" label="Caricamento delle attività…" />
     <template v-else>
       <div class="period-control" role="group" aria-label="Periodo delle statistiche">
         <span class="period-label">Periodo</span>
         <div class="period-options">
-          <button
-            v-for="option in ranges"
-            :key="option.value"
-            type="button"
-            :class="{ active: range === option.value }"
-            :aria-pressed="range === option.value"
-            @click="range = option.value"
-          >{{ option.label }}</button>
+          <button v-for="option in ranges" :key="option.value" type="button" :class="{ active: range === option.value }"
+            :aria-pressed="range === option.value" @click="range = option.value">{{ option.label }}</button>
         </div>
       </div>
 
       <div class="kpis" aria-label="Indicatori principali">
         <article class="kpi-card kpi-primary">
           <span class="kpi-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg>
+            <svg viewBox="0 0 24 24">
+              <path d="M3 12h4l3-8 4 16 3-8h4" />
+            </svg>
           </span>
           <p>Aperture figura</p>
           <strong>{{ number(stats.totalViews) }}</strong>
@@ -286,7 +282,9 @@ onMounted(load)
         </article>
         <article class="kpi-card">
           <span class="kpi-icon kpi-icon-mint" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /></svg>
+            <svg viewBox="0 0 24 24">
+              <path d="M4 5h16v14H4zM8 9h8M8 13h5" />
+            </svg>
           </span>
           <p>Visite di pagina</p>
           <strong>{{ number(stats.totalPageViews) }}</strong>
@@ -294,7 +292,9 @@ onMounted(load)
         </article>
         <article class="kpi-card">
           <span class="kpi-icon kpi-icon-cyan" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            <svg viewBox="0 0 24 24">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
           </span>
           <p>Click nel periodo</p>
           <strong>{{ number(stats.totalClicks) }}</strong>
@@ -302,7 +302,10 @@ onMounted(load)
         </article>
         <article class="kpi-card">
           <span class="kpi-icon kpi-icon-rose" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" /><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5.2a3 3 0 0 1 0 5.6M18 14a5 5 0 0 1 3 4.6v1" /></svg>
+            <svg viewBox="0 0 24 24">
+              <circle cx="9" cy="8" r="3" />
+              <path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5.2a3 3 0 0 1 0 5.6M18 14a5 5 0 0 1 3 4.6v1" />
+            </svg>
           </span>
           <p>Persone raggiunte</p>
           <strong>{{ number(stats.uniqueViewers) }}</strong>
@@ -310,7 +313,9 @@ onMounted(load)
         </article>
         <article class="kpi-card">
           <span class="kpi-icon kpi-icon-gold" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 3v18m6-14H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H6" /></svg>
+            <svg viewBox="0 0 24 24">
+              <path d="M12 3v18m6-14H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H6" />
+            </svg>
           </span>
           <p>Azioni amministrative</p>
           <strong>{{ number(stats.adminActions) }}</strong>
@@ -318,7 +323,9 @@ onMounted(load)
         </article>
         <article class="kpi-card">
           <span class="kpi-icon kpi-icon-rose" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 3v18m6-14H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H6" /></svg>
+            <svg viewBox="0 0 24 24">
+              <path d="M12 3v18m6-14H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H6" />
+            </svg>
           </span>
           <p>Figure mai aperte</p>
           <strong>{{ number(lifetimeStats.neverViewed) }}</strong>
@@ -333,15 +340,22 @@ onMounted(load)
               <h3 id="trend-title">Attività nel tempo</h3>
               <p>{{ chartSummary }}</p>
             </div>
-            <span class="panel-total">{{ number(stats.totalPageViews + stats.totalClicks + stats.adminActions) }} <small>eventi</small></span>
+            <span class="panel-total">{{ number(stats.totalPageViews + stats.totalClicks + stats.adminActions) }}
+              <small>eventi</small></span>
           </div>
-          <div class="trend-chart" role="img" :aria-label="`Andamento di aperture, click e azioni admin. ${chartSummary}`">
+          <div class="trend-chart" role="img"
+            :aria-label="`Andamento di aperture, click e azioni admin. ${chartSummary}`">
             <Line :data="trendChartData" :options="trendOptions" />
           </div>
           <table class="visually-hidden">
             <caption>Attività per {{ range === 'all' ? 'mese' : 'giorno' }}</caption>
             <thead>
-              <tr><th scope="col">Periodo</th><th scope="col">Visite</th><th scope="col">Click</th><th scope="col">Azioni admin</th></tr>
+              <tr>
+                <th scope="col">Periodo</th>
+                <th scope="col">Visite</th>
+                <th scope="col">Click</th>
+                <th scope="col">Azioni admin</th>
+              </tr>
             </thead>
             <tbody>
               <tr v-for="(label, index) in timeline.labels" :key="label">
@@ -375,7 +389,10 @@ onMounted(load)
 
         <section class="panel breakdown-panel" aria-labelledby="events-title">
           <div class="panel-heading">
-            <div><h3 id="events-title">Composizione eventi</h3><p>Come si distribuisce l’attività.</p></div>
+            <div>
+              <h3 id="events-title">Composizione eventi</h3>
+              <p>Come si distribuisce l’attività.</p>
+            </div>
           </div>
           <div v-if="stats.byEventType.length" class="event-chart" role="img"
             :aria-label="`Composizione degli eventi: ${stats.byEventType.map((item) => `${eventLabels[item.eventType] || item.eventType}, ${item.count}`).join('; ')}`">
@@ -384,7 +401,12 @@ onMounted(load)
           <p v-else class="empty-note">La composizione apparirà con le prime attività.</p>
           <table class="visually-hidden">
             <caption>Conteggio degli eventi per tipo</caption>
-            <thead><tr><th scope="col">Evento</th><th scope="col">Conteggio</th></tr></thead>
+            <thead>
+              <tr>
+                <th scope="col">Evento</th>
+                <th scope="col">Conteggio</th>
+              </tr>
+            </thead>
             <tbody>
               <tr v-for="item in stats.byEventType" :key="item.eventType">
                 <th scope="row">{{ eventLabels[item.eventType] || item.eventType }}</th>
@@ -414,30 +436,58 @@ onMounted(load)
 
         <section class="panel breakdown-panel" aria-labelledby="dance-title">
           <div class="panel-heading">
-            <div><h3 id="dance-title">Le danze più cercate</h3><p>Confronto delle aperture nel periodo.</p></div>
+            <div>
+              <h3 id="dance-title">Le danze più cercate</h3>
+              <p>Confronto delle aperture nel periodo.</p>
+            </div>
           </div>
-          <div class="breakdown-chart" role="img" :aria-label="`Aperture per danza: ${stats.byDance.map((item) => `${item.nome}, ${item.views}`).join('; ')}`">
+          <div class="breakdown-chart" role="img"
+            :aria-label="`Aperture per danza: ${stats.byDance.map((item) => `${item.nome}, ${item.views}`).join('; ')}`">
             <Bar :data="danceChartData" :options="danceOptions" />
           </div>
           <table class="visually-hidden">
             <caption>Aperture per danza</caption>
-            <thead><tr><th scope="col">Danza</th><th scope="col">Aperture</th></tr></thead>
-            <tbody><tr v-for="item in stats.byDance" :key="item.id"><th scope="row">{{ item.nome }}</th><td>{{ item.views }}</td></tr></tbody>
+            <thead>
+              <tr>
+                <th scope="col">Danza</th>
+                <th scope="col">Aperture</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in stats.byDance" :key="item.id">
+                <th scope="row">{{ item.nome }}</th>
+                <td>{{ item.views }}</td>
+              </tr>
+            </tbody>
           </table>
         </section>
 
         <section class="panel breakdown-panel" aria-labelledby="style-title">
           <div class="panel-heading">
-            <div><h3 id="style-title">Stili in evidenza</h3><p>Le preferenze che prendono forma.</p></div>
+            <div>
+              <h3 id="style-title">Stili in evidenza</h3>
+              <p>Le preferenze che prendono forma.</p>
+            </div>
           </div>
           <template v-if="stats.byStyle.length">
-            <div class="breakdown-chart" role="img" :aria-label="`Aperture per stile: ${stats.byStyle.slice(0, 6).map((item) => `${item.nome}, ${item.views}`).join('; ')}`">
+            <div class="breakdown-chart" role="img"
+              :aria-label="`Aperture per stile: ${stats.byStyle.slice(0, 6).map((item) => `${item.nome}, ${item.views}`).join('; ')}`">
               <Bar :data="styleChartData" :options="styleOptions" />
             </div>
             <table class="visually-hidden">
               <caption>Aperture per stile</caption>
-              <thead><tr><th scope="col">Stile</th><th scope="col">Aperture</th></tr></thead>
-              <tbody><tr v-for="item in stats.byStyle.slice(0, 6)" :key="item.id"><th scope="row">{{ item.nome }}</th><td>{{ item.views }}</td></tr></tbody>
+              <thead>
+                <tr>
+                  <th scope="col">Stile</th>
+                  <th scope="col">Aperture</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in stats.byStyle.slice(0, 6)" :key="item.id">
+                  <th scope="row">{{ item.nome }}</th>
+                  <td>{{ item.views }}</td>
+                </tr>
+              </tbody>
             </table>
           </template>
           <p v-else class="empty-note">I dati sugli stili appariranno con le prime aperture.</p>
@@ -605,10 +655,25 @@ onMounted(load)
   stroke-width: 1.7;
 }
 
-.kpi-icon-rose { background: var(--brand-soft); color: var(--brand-text); }
-.kpi-icon-mint { background: color-mix(in srgb, var(--success) 12%, var(--ink-2)); color: var(--success); }
-.kpi-icon-gold { background: color-mix(in srgb, var(--warning) 12%, var(--ink-2)); color: var(--warning); }
-.kpi-icon-cyan { background: color-mix(in srgb, var(--info) 12%, var(--ink-2)); color: var(--info); }
+.kpi-icon-rose {
+  background: var(--brand-soft);
+  color: var(--brand-text);
+}
+
+.kpi-icon-mint {
+  background: color-mix(in srgb, var(--success) 12%, var(--ink-2));
+  color: var(--success);
+}
+
+.kpi-icon-gold {
+  background: color-mix(in srgb, var(--warning) 12%, var(--ink-2));
+  color: var(--warning);
+}
+
+.kpi-icon-cyan {
+  background: color-mix(in srgb, var(--info) 12%, var(--ink-2));
+  color: var(--info);
+}
 
 .kpi-card p {
   margin: 1rem 0 0.15rem;
@@ -742,7 +807,6 @@ onMounted(load)
 }
 
 .empty-note,
-.analytics-state,
 .analytics-error {
   margin: 1.2rem 0 0;
   color: var(--analytics-muted);
@@ -826,6 +890,7 @@ onMounted(load)
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .period-options button,
   .retry-button {
     transition: none;
