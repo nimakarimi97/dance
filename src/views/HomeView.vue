@@ -9,6 +9,7 @@ import { isFeatureEnabled } from '../config/features.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
 import { recordAnalyticsEvent } from '../lib/figures.js'
 import InstallGuide from '../components/InstallGuide.vue'
+import StudioIcon from '../components/StudioIcon.vue'
 
 const publicContent = isFeatureEnabled('publicContent')
 
@@ -16,6 +17,19 @@ const root = ref(null)
 let animationContext = null
 
 const title = 'Salsa & Bachata'
+const titleLength = title.replaceAll(' ', '').length
+// Each letter gets its share of the gradient as a solid colour, so glyphs that overflow their box are never clipped.
+const titleWords = title.split(' ').reduce((words, word) => {
+  const start = words.reduce((total, current) => total + current.letters.length, 0)
+  words.push({
+    word,
+    letters: [...word].map((letter, i) => ({
+      letter,
+      mix: `${Math.round(((start + i) / (titleLength - 1)) * 100)}%`,
+    })),
+  })
+  return words
+}, [])
 
 const cards = computed(() =>
   Object.values(dances).map((dance) => {
@@ -40,6 +54,7 @@ onMounted(async () => {
       duration: 0.8,
       ease: 'back.out(1.6)',
       stagger: 0.03,
+      clearProps: 'transform,opacity',
     })
     gsap.from('.hero-sub', { opacity: 0, y: 20, duration: 0.8, delay: 0.5, stagger: 0.1 })
     gsap.from('.dance-card', {
@@ -52,7 +67,6 @@ onMounted(async () => {
       delay: 0.7,
       clearProps: 'transform,opacity',
     })
-    gsap.to('.float', { y: -10, duration: 2.4, ease: 'sine.inOut', yoyo: true, repeat: -1 })
   }, root.value)
 })
 
@@ -98,10 +112,11 @@ function trackDanceClick(danceId) {
   <main ref="root" class="home container">
     <InstallGuide />
     <section class="hero">
-      <p class="hero-hi hero-sub script float">Benvenuto in pista 💃🕺</p>
+      <p class="hero-hi script">Benvenuto in pista</p>
       <h1 class="hero-title" translate="no" aria-label="Salsa & Bachata">
-        <span v-for="(letter, i) in title.split('')" :key="i" class="hero-letter" aria-hidden="true">{{ letter === ' ' ?
-          '\u00A0' : letter }}</span>
+        <span v-for="{ word, letters } in titleWords" :key="word" class="hero-word" aria-hidden="true">
+          <span v-for="({ letter, mix }, i) in letters" :key="i" class="hero-letter" :style="{ '--mix': mix }">{{ letter }}</span>
+        </span>
       </h1>
       <p class="hero-sub">Scegli una danza, apri una figura e provala con il video.</p>
     </section>
@@ -122,7 +137,7 @@ function trackDanceClick(danceId) {
           <span class="card-stili">
             <span v-for="style in dance.stili" :key="style.id" class="card-tag">{{ style.nome }}</span>
           </span>
-          <span class="card-cta">Vedi le figure</span>
+          <span class="card-cta">Esplora <StudioIcon name="arrow" /></span>
         </span>
       </RouterLink>
     </nav>
@@ -147,20 +162,19 @@ function trackDanceClick(danceId) {
 
 .hero-letter {
   display: inline-block;
+  color: color-mix(in oklab, var(--title-to) var(--mix), var(--title-from));
 }
 
+.hero-word { display: inline-block; white-space: nowrap; }
 .hero-title {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  column-gap: 0.2em;
   font-family: 'Caveat', cursive;
-  font-size: clamp(3.6rem, 14vw, 8rem);
+  font-size: clamp(3rem, 11vw, 7rem);
   font-weight: 700;
   line-height: 1;
-  background: var(--grad-text);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
 }
 
 .hero-sub {
@@ -186,29 +200,17 @@ function trackDanceClick(danceId) {
   border-radius: 1.25rem;
   text-decoration: none;
   color: var(--text);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+  background: var(--ink-2);
   border: 1px solid var(--line);
-  box-shadow: 0 20px 44px -30px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--shadow);
+  border-top: 4px solid var(--accent);
   transform-style: preserve-3d;
   position: relative;
   overflow: hidden;
 }
 
-.dance-card::after {
-  content: '';
-  position: absolute;
-  inset: auto -30% -40% auto;
-  width: 70%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--accent);
-  filter: blur(40px);
-  opacity: 0.5;
-  pointer-events: none;
-}
-
 .dance-card:hover {
-  border-color: rgba(255, 255, 255, 0.35);
+  border-color: var(--accent);
 }
 
 .dance-card:focus-visible {
@@ -237,7 +239,7 @@ function trackDanceClick(danceId) {
   margin: 0;
   max-width: 40ch;
   font-size: 1.05rem;
-  color: #cbd5e1;
+  color: var(--muted);
 }
 
 .card-foot {
@@ -259,22 +261,25 @@ function trackDanceClick(danceId) {
   padding: 0.25rem 0.75rem;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--ink-3);
   font-size: 0.9rem;
   font-weight: 600;
 }
 
 .card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.65rem 1.1rem;
   border-radius: 0.75rem;
-  background: #e2e8f0;
-  color: #0f172a;
+  background: var(--accent);
+  color: var(--on-accent);
   font-weight: 700;
   transition: background-color 160ms ease, transform 160ms ease;
 }
 
 .dance-card:hover .card-cta {
-  background: #fff;
+  background: var(--accent);
   transform: translateY(-1px);
 }
 

@@ -44,7 +44,7 @@ Questi eventi browser sono telemetria, non una fonte attendibile per audit o aut
 
 ### Aggiungere figure, immagini e video
 
-Apri **Profilo** per accedere alla dashboard: riepilogo del repertorio, disponibilità dei video, catalogo ricercabile e dettagli dell'account. Puoi combinare ricerca per nome, danza e disponibilità video; **Vedi le figure senza video** porta direttamente al catalogo filtrato. Su laptop la navigazione laterale collega le sezioni; su mobile i controlli e il catalogo si adattano allo schermo.
+Apri **Dashboard** per accedere alla pratica personale e al catalogo ricercabile. Gli amministratori trovano anche il riepilogo video e gli strumenti di gestione. Le sezioni sono nella navigazione laterale su desktop e nel menu **Sezioni dashboard** su mobile. L'account si apre dall'icona utente nella barra superiore, non dalla sidebar. Le sezioni sono collegabili direttamente con `?sezione=pratica`, `?sezione=catalogo` o `?sezione=account`.
 
 Con un account con label `admin`, usa **Nuova figura** oppure il pulsante di modifica di una riga del catalogo. Nell'editor puoi scegliere gli stili e caricare video/immagine; in alternativa puoi inserire un ID YouTube di 11 caratteri. L'editor occupa lo schermo sui telefoni, chiede conferma prima di scartare modifiche non salvate e conserva i dati se il salvataggio fallisce. Gli altri utenti possono consultare il catalogo e aprire le figure, senza controlli di modifica.
 
@@ -68,10 +68,17 @@ Il routing usa URL puliti (ad esempio `/danza/salsa`). Il file `public/404.html`
 
 ## Pratica, ricerca e amministrazione
 
-- **Profilo → La mia pratica**: preferiti, liste personali e raccolte per progresso. Ogni figura permette di salvare note private e uno dei progressi `learning`, `practicing`, `mastered`, oppure nessuno.
+- **Dashboard → La mia pratica**: preferiti, liste personali e raccolte per progresso. Ogni figura permette di selezionare il segnalibro dei preferiti e salvare note private e uno dei progressi `learning`, `practicing`, `mastered`, oppure nessuno, con **Salva la mia pratica**.
 - Ricerca per nome, **alias strutturati** e descrizione, senza distinzione di accenti/maiuscole. Per trovare `70` con `settanta`, inserire `settanta` tra i nomi alternativi nell'editor: non si deducono alias dai numeri.
 - Danza/stile, video e difficoltà sono combinabili; ordinamento per nome naturale (2 prima di 10), difficoltà o aggiornamento. Le figure precedenti senza difficoltà restano valide e filtrabili come “Non indicata”.
 - **Dettagli offline** nelle schede salva solo testo sul dispositivo; le copie sono accessibili da `/offline` anche senza rete. Nessun video o nota privata viene copiato. Browser storage non crittografato; logout/cambio account rimuovono le copie.
 - Audit amministrativo separato dagli analytics e workflow JSON con anteprima/conferma per importazioni e modifiche massive.
 
 **Setup obbligatorio prima del deploy frontend:** [pratica privata e offline](docs/APPWRITE_PRACTICE.md) e [audit, schema catalogo e Function admin](docs/APPWRITE_ADMIN.md). Le risorse Appwrite e le Function non vengono create o distribuite automaticamente dalla build del sito. Non mantenere i vecchi permessi di scrittura diretta del catalogo: le modifiche devono attraversare il backend di audit.
+
+## Aspetto e navigazione
+
+- Il selettore sole/luna nella barra superiore cambia tema con una transizione di 250 ms. Il tema iniziale segue il dispositivo; la scelta esplicita viene ricordata localmente (`dance-theme`) e sincronizzata tra le schede. Le animazioni rispettano `prefers-reduced-motion`.
+- Colori di superfici, testi, controlli e stati sono definiti dai token in [src/style.css](src/style.css); anche i grafici amministrativi seguono il tema.
+- Su mobile Home, Salsa, Bachata e Dashboard restano nella barra inferiore. Il pulsante **Nuova figura** appare solo nel catalogo degli amministratori.
+- Il footer ha due colonne (impilate su mobile): identità e copyright a sinistra, LinkedIn/YouTube/GitHub e il contatto [dance@nimakarimi.me](mailto:dance@nimakarimi.me) a destra.

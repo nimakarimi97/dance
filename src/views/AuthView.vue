@@ -70,7 +70,7 @@ async function handleGoogleSignIn() {
   <main class="auth container">
     <section class="card">
       <h1 class="script">{{ isRegistration ? 'Crea account' : 'Accedi' }}</h1>
-      <p class="sub">Entra per gestire le figure e i tuoi dati.</p>
+      <p class="sub">Ritrova le tue figure, i preferiti e le liste di pratica.</p>
 
       <button type="button" class="btn google" :disabled="isLoading" @click="handleGoogleSignIn">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
@@ -174,9 +174,9 @@ async function handleGoogleSignIn() {
   width: min(100%, 440px);
   padding: clamp(1.25rem, 5vw, 2.25rem);
   border-radius: 1rem;
-  background: linear-gradient(160deg, #172338, #101829);
+  background: var(--ink-2);
   border: 1px solid var(--line);
-  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.32);
+  box-shadow: var(--shadow);
 }
 
 h1 {
@@ -226,8 +226,8 @@ input {
   min-height: 3rem;
   padding: 0.7rem 0.9rem;
   border-radius: 0.7rem;
-  border: 1px solid var(--line);
-  background: var(--ink);
+  border: 1px solid var(--input-line);
+  background: var(--input-bg);
   color: var(--text);
   font-size: 1rem;
   /* 16px avoids iOS zoom on focus */
@@ -249,8 +249,8 @@ input {
   right: 0.35rem;
   display: grid;
   place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   padding: 0;
   border: 0;
   border-radius: 0.55rem;
@@ -275,7 +275,7 @@ input {
 }
 
 input:focus {
-  border-color: #a78bfa;
+  border-color: var(--focus);
 }
 
 .errore {
@@ -310,7 +310,7 @@ input:focus {
 }
 
 .toggle:hover:not(:disabled) {
-  color: #c4b5fd;
+  color: var(--brand-text);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,14 +1,15 @@
 <script setup>
-import { gsap } from 'gsap'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { authError, currentUser, ensureAuth, isLoggedIn } from './lib/auth.js'
 import { isFeatureEnabled } from './config/features.js'
 import { dances, findDance, findFigure } from './data/danze.js'
 import { isOnline } from './lib/online.js'
-import { canAnimate } from './lib/motion.js'
 import { ANALYTICS_EVENTS } from './lib/analytics.js'
 import { recordAnalyticsEvent } from './lib/figures.js'
+import ThemeSwitch from '../ThemeSwitch.vue'
+import StudioIcon from './components/StudioIcon.vue'
+import { initializeTheme, isDarkMode, themeError } from './lib/theme.js'
 
 const route = useRoute()
 const authEnabled = isFeatureEnabled('auth')
@@ -16,29 +17,18 @@ const danceList = Object.values(dances)
 const baseTitle = 'Salsa & Bachata · Figure'
 const copyrightYears = new Date().getFullYear()
 
-const blobs = ref(null)
-let blobContext = null
+const themeController = initializeTheme()
+const socialLinks = [
+  { name: 'LinkedIn', icon: 'linkedin', url: 'https://nimakarimi.me/linkedin' },
+  { name: 'YouTube', icon: 'youtube', url: 'https://nimakarimi.me/youtube' },
+  { name: 'GitHub', icon: 'github', url: 'https://nimakarimi.me/github' },
+]
 
 onMounted(() => {
   if (authEnabled) ensureAuth()
-  if (!canAnimate()) return
-  blobContext = gsap.context(() => {
-    gsap.utils.toArray('.blob').forEach((blob, i) => {
-      gsap.to(blob, {
-        x: '6vw',
-        y: '4vh',
-        scale: 1.15,
-        duration: 14 + i * 4,
-        ease: 'sine.inOut',
-        yoyo: true,
-        repeat: -1,
-        delay: -i * 5,
-      })
-    })
-  }, blobs.value)
 })
 
-onBeforeUnmount(() => blobContext?.revert())
+onBeforeUnmount(() => themeController.dispose())
 
 // The figure page belongs to its dance, so the matching tab stays highlighted.
 const activeDance = computed(() => {
@@ -51,7 +41,7 @@ const pageTitle = computed(() => {
   if (route.name === 'danza') return findDance(route.params.danza)?.nome
   if (route.name === 'figura') return findFigure(route.params.figura)?.nome
   if (route.name === 'auth') return 'Accedi'
-  if (route.name === 'dashboard') return 'Area personale'
+  if (route.name === 'dashboard') return 'Dashboard'
   return ''
 })
 
@@ -101,12 +91,6 @@ function trackNavigation(target) {
 
 <template>
   <div class="app" :class="{ 'app--dashboard': route.name === 'dashboard' }">
-    <div ref="blobs" class="blobs" aria-hidden="true">
-      <span class="blob blob-rose" />
-      <span class="blob blob-indigo" />
-      <span class="blob blob-amber" />
-    </div>
-
     <a href="#/" class="skip" @click.prevent="focusMain">Vai al contenuto</a>
 
     <header class="topbar">
@@ -114,8 +98,40 @@ function trackNavigation(target) {
         <img class="brand-mark" src="/pwa-192.png" alt="" aria-hidden="true" />
         <span class="brand-name" translate="no">Salsa &amp; Bachata</span>
       </RouterLink>
-    </header>
+      <div class="header-actions">
+        <ThemeSwitch :model-value="isDarkMode" @update:model-value="themeController.setDarkMode" />
+        <RouterLink v-if="authEnabled" class="user-link"
+          :class="{ 'user-link--on': route.name === 'dashboard' && route.query.sezione === 'account' }"
+          :to="isLoggedIn ? { name: 'dashboard', query: { sezione: 'account' } } : { name: 'auth' }"
+          :aria-label="isLoggedIn ? 'Il mio account' : 'Accedi'"
+          @click="trackNavigation(isLoggedIn ? 'account' : 'auth')">
+          <StudioIcon name="user" />
+        </RouterLink>
+      </div>
 
+      <nav class="tabs" aria-label="Principale">
+        <RouterLink to="/" class="tab" :class="{ 'tab-on': route.name === 'home' }" @click="trackNavigation('home')"
+          :aria-current="route.name === 'home' ? 'page' : undefined">
+          <StudioIcon name="home" />
+          <span>Home</span>
+        </RouterLink>
+        <RouterLink v-for="dance in danceList" :key="dance.id" :to="{ name: 'danza', params: { danza: dance.id } }"
+          class="tab" :class="{ 'tab-on': activeDance === dance.id }" :data-dance="dance.id"
+          @click="trackNavigation(`dance:${dance.id}`)"
+          :aria-current="activeDance === dance.id ? 'page' : undefined">
+          <StudioIcon name="dance" />
+          <span>{{ dance.nome }}</span>
+        </RouterLink>
+        <RouterLink v-if="authEnabled" :to="isLoggedIn ? { name: 'dashboard' } : { name: 'auth' }" class="tab"
+          :class="{ 'tab-on': route.name === 'auth' || route.name === 'dashboard' }"
+          @click="trackNavigation(isLoggedIn ? 'dashboard' : 'auth')"
+          :aria-current="route.name === 'auth' || route.name === 'dashboard' ? 'page' : undefined">
+          <StudioIcon :name="isLoggedIn ? 'grid' : 'user'" />
+          <span>{{ isLoggedIn ? 'Dashboard' : 'Accedi' }}</span>
+        </RouterLink>
+      </nav>
+    </header>
+    <p v-if="themeError" class="theme-notice" role="status">{{ themeError }}</p>
     <p v-if="!isOnline" class="offline" role="status">
       Sei offline. <RouterLink to="/offline">Apri i dettagli salvati per la pratica</RouterLink>. I video richiedono una connessione.
     </p>
@@ -130,39 +146,23 @@ function trackNavigation(target) {
     </RouterView>
 
     <footer class="footer">
-      <a href="https://nimakarimi.me" target="_blank" rel="noopener">nimakarimi.me</a>
-      <p class="copyright">
-        © {{ copyrightYears }} Nima Karimi · <a href="mailto:dance@nimakarimi.me">dance@nimakarimi.me</a>
-      </p>
+      <div class="footer-intro">
+        <span class="script footer-brand">Salsa &amp; Bachata</span>
+        <p class="copyright">
+          © {{ copyrightYears }} <a href="https://nimakarimi.me" target="_blank" rel="noopener noreferrer">Nima Karimi</a>
+        </p>
+      </div>
+      <div class="footer-connect">
+        <nav class="social-links" aria-label="Segui Nima Karimi">
+          <a v-for="social in socialLinks" :key="social.name" :href="social.url" target="_blank" rel="noopener noreferrer">
+            <StudioIcon :name="social.icon" /><span>{{ social.name }}</span>
+          </a>
+        </nav>
+        <p class="footer-contact">Per richieste e domande, scrivi a
+          <a href="mailto:dance@nimakarimi.me">dance@nimakarimi.me</a>
+        </p>
+      </div>
     </footer>
-
-    <nav class="tabs" aria-label="Principale">
-      <RouterLink to="/" class="tab" :class="{ 'tab-on': route.name === 'home' }" @click="trackNavigation('home')"
-        :aria-current="route.name === 'home' ? 'page' : undefined">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" />
-        </svg>
-        <span>Home</span>
-      </RouterLink>
-      <RouterLink v-for="dance in danceList" :key="dance.id" :to="{ name: 'danza', params: { danza: dance.id } }"
-        class="tab" :class="{ 'tab-on': activeDance === dance.id }" :data-dance="dance.id"
-        @click="trackNavigation(`dance:${dance.id}`)"
-        :aria-current="activeDance === dance.id ? 'page' : undefined">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M9 18V5l11-2v13M9 18a3 3 0 1 1-3-3 3 3 0 0 1 3 3zm11-2a3 3 0 1 1-3-3 3 3 0 0 1 3 3z" />
-        </svg>
-        <span>{{ dance.nome }}</span>
-      </RouterLink>
-      <RouterLink v-if="authEnabled" :to="isLoggedIn ? { name: 'dashboard' } : { name: 'auth' }" class="tab"
-        :class="{ 'tab-on': route.name === 'auth' || route.name === 'dashboard' }"
-        @click="trackNavigation(isLoggedIn ? 'dashboard' : 'auth')"
-        :aria-current="route.name === 'auth' || route.name === 'dashboard' ? 'page' : undefined">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 8a8 8 0 0 1 16 0z" />
-        </svg>
-        <span>{{ isLoggedIn ? 'Profilo' : 'Accedi' }}</span>
-      </RouterLink>
-    </nav>
   </div>
 </template>
 
@@ -175,51 +175,6 @@ function trackNavigation(target) {
   overflow-x: clip;
 }
 
-.app--dashboard {
-  background: #090d1a;
-}
-
-.app--dashboard .blobs {
-  display: none;
-}
-
-.blobs {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.blob {
-  position: absolute;
-  width: 55vmax;
-  height: 55vmax;
-  border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.35;
-  will-change: transform;
-}
-
-.blob-rose {
-  background: var(--salsa);
-  top: -20%;
-  left: -15%;
-}
-
-.blob-indigo {
-  background: var(--bachata);
-  bottom: -25%;
-  right: -15%;
-}
-
-.blob-amber {
-  background: var(--gold);
-  top: 30%;
-  left: 40%;
-  opacity: 0.18;
-}
-
 .skip {
   position: fixed;
   top: 0.5rem;
@@ -227,8 +182,8 @@ function trackNavigation(target) {
   z-index: 40;
   padding: 0.7rem 1rem;
   border-radius: 10px;
-  background: var(--gold);
-  color: var(--ink);
+  background: var(--brand);
+  color: var(--on-accent);
   font-weight: 700;
   transform: translateY(-200%);
 }
@@ -243,10 +198,12 @@ function trackNavigation(target) {
   z-index: 10;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 4rem;
   padding: 0.5rem clamp(1rem, 4vw, 3rem);
   padding-top: calc(0.5rem + env(safe-area-inset-top));
-  background: rgba(9, 13, 26, 0.86);
-  backdrop-filter: blur(12px);
+  background: var(--chrome);
   border-bottom: 1px solid var(--line);
 }
 
@@ -257,8 +214,9 @@ function trackNavigation(target) {
   min-height: var(--touch);
   text-decoration: none;
   font-family: 'Caveat', cursive;
-  font-size: 1.7rem;
+  font-size: clamp(1.15rem, 5vw, 1.7rem);
   font-weight: 700;
+  color: var(--text);
 }
 
 .brand-mark {
@@ -270,11 +228,18 @@ function trackNavigation(target) {
   object-fit: cover;
 }
 
+.header-actions { display: flex; align-items: center; gap: 0.5rem; }
+.user-link { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 50%; color: var(--text); }
+.user-link:hover { background: var(--ink-3); }
+.user-link--on { border-color: var(--accent-text); color: var(--accent-text); background: var(--brand-soft); }
+.app > main { flex: 1 0 auto; }
+.theme-notice { margin: 0; padding: 0.75rem 1rem; background: var(--brand-soft); color: var(--text); }
+
 .offline {
   margin: 0;
   padding: 0.6rem 1rem;
   background: var(--gold);
-  color: var(--ink);
+  color: var(--ink-2);
   font-size: 0.9rem;
   font-weight: 600;
   text-align: center;
@@ -283,24 +248,41 @@ function trackNavigation(target) {
 .footer {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  margin-top: auto;
-  padding: 2rem 1rem calc(var(--nav-h) + 2rem + env(safe-area-inset-bottom));
-  text-align: center;
-  font-size: 0.9rem;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+  border-top: 1px solid var(--line);
+  background: var(--ink-2);
+  padding: 2rem clamp(1rem, 4vw, 3rem) calc(var(--nav-h) + 2rem + env(safe-area-inset-bottom));
+  text-align: left;
+  font-size: 1rem;
   color: var(--muted);
 }
 
 .footer a {
-  display: inline-block;
-  padding: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.5rem;
   color: var(--text);
+  text-underline-offset: 4px;
 }
+
+.footer-brand { font-size: 2rem; font-weight: 700; color: var(--text); }
+.footer-intro p { margin: 0.25rem 0 0; }
+.footer-intro, .footer-connect { min-width: 0; }
+.social-links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.social-links a { text-decoration: none; padding-inline: 0.75rem; border: 1px solid var(--line); border-radius: 0.75rem; }
+.social-links a:hover { background: var(--ink-3); color: var(--brand-text); }
+.footer-contact { margin: 0.75rem 0 0; }
+.footer-contact a { padding-inline: 0; overflow-wrap: anywhere; }
 
 .copyright {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 /* Mobile: app-style bottom tab bar. */
@@ -311,8 +293,7 @@ function trackNavigation(target) {
   display: flex;
   height: calc(var(--nav-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
-  background: rgba(9, 13, 26, 0.96);
-  backdrop-filter: blur(14px);
+  background: var(--chrome);
   border-top: 1px solid var(--line);
 }
 
@@ -342,19 +323,17 @@ function trackNavigation(target) {
 }
 
 .tab-on {
-  color: var(--accent-text, #fcd34d);
-}
-
-.tab-on[data-dance] svg {
-  fill: currentColor;
-  fill-opacity: 0.2;
+  color: var(--accent-text);
+  font-weight: 700;
 }
 
 /* Desktop: same links, moved to the top right. */
-@media (min-width: 760px) {
+@media (min-width: 960px) {
   .tabs {
-    inset: 0 clamp(1rem, 4vw, 3rem) auto auto;
-    height: 3.75rem;
+    position: static;
+    order: 1;
+    margin-left: auto;
+    height: auto;
     padding: 0;
     gap: 0.25rem;
     background: none;
@@ -362,26 +341,27 @@ function trackNavigation(target) {
     border: 0;
   }
 
+  .header-actions { order: 2; }
   .tab {
     flex-direction: row;
     gap: 0.5rem;
-    padding: 0 1rem;
+    min-height: 44px;
+    padding: 0 0.75rem;
     border-radius: 0.8rem;
     font-size: 0.95rem;
   }
 
   .tab:hover {
-    background: rgba(30, 41, 59, 0.72);
+    background: var(--ink-3);
   }
 
-  .tab-on:not([data-dance]) {
-    background: rgba(124, 58, 237, 0.16);
-    color: #c4b5fd;
-  }
+  .footer { padding-bottom: 2rem; }
+}
 
-  .footer {
-    padding-bottom: 2rem;
-  }
+@media (min-width: 640px) {
+  .footer { flex-direction: row; align-items: flex-start; }
+  .footer-connect { text-align: right; max-width: 34rem; }
+  .social-links { justify-content: flex-end; }
 }
 
 .page-enter-active,

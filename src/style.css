@@ -1,29 +1,90 @@
 :root {
-  --ink: #0f172a;
-  --ink-2: #1e293b;
-  --ink-3: #273449;
-  --line: rgba(255, 255, 255, 0.14);
-  --text: #f8fafc;
-  --muted: #94a3b8;
+  --ink: #f6f7f8;
+  --ink-2: #ffffff;
+  --ink-3: #edf0f2;
+  --line: #cbd2d8;
+  --text: #20272d;
+  --muted: #56616b;
   --salsa: #e11d48;
   --bachata: #2629e1;
-  --gold: #f59e0b;
+  --gold: #926200;
+  --focus: #2563eb;
+  --brand: #b92350;
+  --brand-text: #b92350;
+  --brand-soft: #fbeaf0;
+  --success: #16724f;
+  --warning: #875700;
+  --info: #176d87;
+  --input-bg: #f0f2f4;
+  --input-line: #7f8c97;
+  --chrome: #ffffff;
+  --shadow: 0 2px 8px rgb(20 30 40 / 5%);
+  --scrim: rgb(0 0 0 / 55%);
   --grad: linear-gradient(135deg, var(--salsa), var(--bachata));
-  --grad-text: linear-gradient(90deg, #fb7185, #a5b4fc 60%, #fcd34d);
+  --grad-text: linear-gradient(90deg, #b92350, #4846a5);
+  --title-from: #b92350;
+  --title-to: #4846a5;
   /* Fill colour vs. readable-on-dark colour for each dance. */
   --accent: var(--salsa);
-  --accent-text: #fb7185;
+  --accent-text: #b92350;
   --on-accent: #fff;
   --radius: 18px;
   --nav-h: 4.25rem;
   --touch: 2.75rem;
+  --studio-bg: var(--ink);
+  --studio-panel: var(--ink-2);
+  --studio-panel-soft: var(--ink);
+  --studio-raised: var(--ink-3);
+  --studio-line: var(--line);
+  --studio-text: var(--text);
+  --studio-muted: var(--muted);
+  --studio-accent: var(--brand);
+  --studio-accent-2: var(--info);
+  --studio-accent-soft: var(--brand-soft);
+  --studio-hover: var(--ink-3);
+  --studio-success: var(--success);
+  --studio-warning: var(--warning);
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --ink: #121619;
+  --ink-2: #1c2227;
+  --ink-3: #293139;
+  --line: #49545e;
+  --text: #f2f4f6;
+  --muted: #b0bac3;
+  --gold: #f1c56c;
+  --focus: #8db8ff;
+  --brand-text: #ff9abb;
+  --brand-soft: #38232c;
+  --success: #7ce0b3;
+  --warning: #f1c56c;
+  --info: #83d9ed;
+  --input-bg: #151a1e;
+  --input-line: #748390;
+  --chrome: #1c2227;
+  --shadow: none;
+  --accent-text: #ff9abb;
+  --grad-text: linear-gradient(90deg, #ff9abb, #b6b4ff);
+  --title-from: #ff9abb;
+  --title-to: #b6b4ff;
   color-scheme: dark;
 }
 
-[data-dance='salsa'] { --accent: var(--salsa); --accent-text: #fb7185; }
-[data-dance='bachata'] { --accent: var(--bachata); --accent-text: #a5b4fc; }
+[data-dance='salsa'] { --accent: var(--salsa); --accent-text: var(--brand-text); }
+[data-dance='bachata'] { --accent: var(--bachata); --accent-text: #4846a5; }
+[data-theme='dark'] [data-dance='bachata'] { --accent-text: #b6b4ff; }
 
 * { box-sizing: border-box; }
+
+:where(html, body, div, main, header, footer, nav, aside, section, article, details, summary, form, fieldset, label, input, select, textarea, button, a, p, h1, h2, h3, span, td, th) {
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+:where(html, body, .brand, .footer, .dashboard, .user-link) {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
 
 html {
   -webkit-text-size-adjust: 100%;
@@ -44,11 +105,19 @@ h1, h2, h3 { margin: 0; line-height: 1.05; text-wrap: balance; }
 
 a { color: inherit; }
 
-a, button, input { touch-action: manipulation; }
-button, input { font: inherit; }
+a, button, input, select, summary { touch-action: manipulation; }
+button, input, select, textarea { font: inherit; }
+input, select, textarea { accent-color: var(--brand); }
+:where(input:not([type='checkbox']):not([type='radio']), select, textarea) { border-color: var(--input-line); }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
+button, summary { cursor: pointer; }
+button:active:not(:disabled), .btn:active { filter: brightness(0.94); }
+img, video { max-width: 100%; }
+main { min-width: 0; }
+p { text-wrap: pretty; }
 
 :focus-visible {
-  outline: 3px solid var(--gold);
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
   border-radius: 6px;
 }
@@ -85,7 +154,7 @@ button, input { font: inherit; }
 }
 .chip:hover { border-color: var(--accent-text); }
 .chip.active {
-  background: var(--grad);
+  background: var(--accent);
   border-color: transparent;
   color: #fff;
   font-weight: 700;
@@ -120,7 +189,7 @@ button, input { font: inherit; }
 .btn:hover:not(:disabled) { border-color: var(--text); }
 .btn:disabled { opacity: 0.6; cursor: wait; }
 .btn-primary {
-  background: var(--grad);
+  background: var(--brand);
   border-color: transparent;
   color: #fff;
 }
