@@ -6,7 +6,7 @@ const server = await createServer({
   configFile: false,
   cacheDir: 'node_modules/.vite-tests',
   optimizeDeps: { noDiscovery: true },
-  server: { middlewareMode: true },
+  server: { middlewareMode: true, hmr: false },
   appType: 'custom',
 })
 const { account, functions, storage, tablesDB } = await server.ssrLoadModule('/src/lib/appwrite.js')
@@ -21,6 +21,7 @@ const {
 const { ANALYTICS_EVENTS } = await server.ssrLoadModule('/src/lib/analytics.js')
 const roles = await server.ssrLoadModule('/src/lib/roles.js')
 const catalog = await server.ssrLoadModule('/src/data/danze.js')
+const { practiceRequest } = await server.ssrLoadModule('/src/lib/practice-api.js')
 
 afterEach(() => mock.restoreAll())
 after(() => server.close())
@@ -74,6 +75,45 @@ test('logout clears figures and a stale account response cannot restore access',
   assert.equal(catalog.figures.value.length, 0)
 })
 
+test('switching directly between accounts clears the previous catalog and rejects its pending response', async () => {
+  const get = mock.method(account, 'get', async () => ({ $id: 'first', labels: [] }))
+  await auth.refreshUser()
+  const list = mock.method(tablesDB, 'listRows', async () => ({ rows: [{ $id: 'old', nome: 'Old' }] }))
+  await catalog.refreshFigures()
+  assert.equal(catalog.figures.value.length, 1)
+  let resolve
+  list.mock.mockImplementation(() => new Promise(done => { resolve = done }))
+  const pending = catalog.refreshFigures()
+  get.mock.mockImplementation(async () => ({ $id: 'second', labels: [] }))
+  await auth.refreshUser()
+  resolve({ rows: [{ $id: 'first-only' }] })
+  await pending
+  assert.equal(catalog.figures.value.length, 0)
+})
+
+test('full offline storage does not block sign-in after previous-account copies have been removed', async () => {
+  const previousWindow = globalThis.window
+  let stored = JSON.stringify({ owner: 'previous', figures: [{ id: 'private' }] })
+  globalThis.window = {
+    localStorage: {
+      getItem: () => stored,
+      setItem: () => { throw new Error('Quota exceeded') },
+      removeItem: () => { stored = null },
+    },
+  }
+  mock.method(console, 'error', () => {})
+  mock.method(account, 'get', async () => ({ $id: 'next', labels: [] }))
+  try {
+    await auth.refreshUser()
+    assert.equal(auth.currentUser.value.$id, 'next')
+    assert.equal(stored, null)
+    assert.match(auth.authError.value, /archivio offline non disponibile/)
+  } finally {
+    if (previousWindow === undefined) delete globalThis.window
+    else globalThis.window = previousWindow
+  }
+})
+
 test('figure listing paginates beyond 100 rows', async () => {
   const first = Array.from({ length: 100 }, (_, i) => ({ $id: `figure-${i}` }))
   const pages = [first, [{ $id: 'last' }]]
@@ -92,7 +132,9 @@ test('user management delegates listing and role changes to the Appwrite Functio
     return {
       status: 'completed',
       responseStatusCode: 200,
-      responseBody: JSON.stringify({ users: [{ $id: 'user-1', role: 'user' }] }),
+      responseBody: JSON.stringify(JSON.parse(params.body).action === 'set-role'
+        ? { user: { $id: 'user-1', role: 'admin' } }
+        : { users: [{ $id: 'user-1', role: 'user' }] }),
     }
   })
 
@@ -116,6 +158,27 @@ test('user management reports function errors to its caller', async () => {
   }))
 
   await assert.rejects(roles.listUsers(), /Super admin required/)
+})
+
+test('role audit completion failure cannot be mistaken for a safely retryable rejected change', async () => {
+  mock.method(functions, 'createExecution', async () => ({
+    status: 'completed', responseStatusCode: 500,
+    responseBody: JSON.stringify({ error: 'Completion failed', auditPending: true, user: { $id: 'target', role: 'admin' } }),
+  }))
+  await assert.rejects(roles.setUserRole('target', 'admin'), error => error.auditPending && /Non ripetere/.test(error.message))
+})
+
+test('practice API never supplies an owner and rejects malformed success responses', async () => {
+  const execute = mock.method(functions, 'createExecution', async () => ({
+    status: 'completed', responseStatusCode: 200,
+    responseBody: JSON.stringify({ records: [], lists: [] }),
+  }))
+  assert.deepEqual(await practiceRequest('list'), { records: [], lists: [] })
+  assert.deepEqual(JSON.parse(execute.mock.calls[0].arguments[0].body), { action: 'list', service: 'practice' })
+  execute.mock.mockImplementation(async () => ({
+    status: 'completed', responseStatusCode: 200, responseBody: '{}',
+  }))
+  await assert.rejects(practiceRequest('save-figure', { figureId: '70' }), /non validi/)
 })
 
 test('analytics events write their type and omit empty figure targets', async () => {
@@ -155,15 +218,22 @@ test('analytics events are not written for anonymous users', async () => {
   assert.equal(create.mock.callCount(), 0)
 })
 
-test('new figures record the creator and edits leave it untouched', async () => {
-  const create = mock.method(tablesDB, 'createRow', async () => ({ $id: 'new' }))
+test('new figures use the trusted audited backend, never browser-supplied creator identity', async () => {
+  const create = mock.method(tablesDB, 'createRow', async () => { throw new Error('Direct figure writes forbidden') })
+  const execute = mock.method(functions, 'createExecution', async () => ({
+    status: 'completed', responseStatusCode: 200, responseBody: JSON.stringify({ figure: { $id: 'new' } }),
+  }))
   await saveFigure({ data: { nome: 'Nuova' }, userId: 'user-1' })
-  assert.equal(create.mock.calls[0].arguments[0].data.createdBy, 'user-1')
+  assert.equal(create.mock.callCount(), 0)
+  assert.deepEqual(JSON.parse(execute.mock.calls[0].arguments[0].body), { service: 'figures', action: 'save', data: { nome: 'Nuova' } })
 })
 
 test('media enforces the exact 50 MB limit and allowed extensions before upload', async () => {
   const upload = mock.method(storage, 'createFile', async () => ({ $id: 'video' }))
-  mock.method(tablesDB, 'createRow', async params => params)
+  mock.method(functions, 'createExecution', async params => ({
+    status: 'completed', responseStatusCode: 200,
+    responseBody: JSON.stringify({ figure: { $id: 'new', ...JSON.parse(params.body), permissions: [] } }),
+  }))
   for (const file of [{ name: 'video.webm', size: MAX_MEDIA_SIZE + 1 }, { name: 'video.exe', size: 10 }, { name: 'video.mp4', size: 0 }]) {
     await assert.rejects(saveFigure({ data: {}, video: file }))
   }
@@ -173,11 +243,22 @@ test('media enforces the exact 50 MB limit and allowed extensions before upload'
   assert.deepEqual(result.permissions, [])
 })
 
-test('failed row writes remove uploaded files and preserve the original error', async () => {
+test('definitively rejected audited writes remove uploaded files and preserve the original error', async () => {
   mock.method(storage, 'createFile', async () => ({ $id: 'uploaded' }))
   const remove = mock.method(storage, 'deleteFile', async () => {})
-  mock.method(tablesDB, 'updateRow', async () => { throw new Error('Row rejected') })
+  mock.method(functions, 'createExecution', async () => ({
+    status: 'completed', responseStatusCode: 400,
+    responseBody: JSON.stringify({ error: 'Row rejected', outcome: 'rejected' }),
+  }))
   await assert.rejects(saveFigure({ id: 'existing', data: {}, image: { name: 'image.png', size: 10 } }), /Row rejected/)
   assert.equal(remove.mock.callCount(), 1)
   assert.equal(remove.mock.calls[0].arguments[0].fileId, 'uploaded')
+})
+
+test('an uncertain function outcome never deletes media that a committed figure may reference', async () => {
+  mock.method(storage, 'createFile', async () => ({ $id: 'possibly-used' }))
+  const remove = mock.method(storage, 'deleteFile', async () => {})
+  mock.method(functions, 'createExecution', async () => { throw new Error('Network lost') })
+  await assert.rejects(saveFigure({ id: 'existing', data: {}, image: { name: 'image.png', size: 10 } }), /Esito incerto/)
+  assert.equal(remove.mock.callCount(), 0)
 })

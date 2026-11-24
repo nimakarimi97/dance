@@ -69,6 +69,8 @@ test('non-super-admins cannot list users or change labels', async () => {
 test('role updates preserve unrelated labels and cannot target the caller', async () => {
   let updatedLabels
   const handler = createUserManagementHandler({
+    unique: () => 'operation-1',
+    async createAudit(data) { return data },
     async getUser(userId) {
       return userId === 'admin-1'
         ? { $id: userId, labels: ['superadmin'] }
@@ -91,4 +93,58 @@ test('role updates preserve unrelated labels and cannot target the caller', asyn
   const selfCall = makeContext({ action: 'set-role', userId: 'admin-1', role: 'user' })
   await handler(selfCall.context)
   assert.equal(selfCall.response.status, 409)
+})
+
+test('role changes fail closed without a durable pending audit', async () => {
+  let changed = false
+  const handler = createUserManagementHandler({
+    unique: () => 'operation-1',
+    async getUser(id) { return { $id: id, labels: id === 'admin-1' ? ['superadmin'] : [] } },
+    async createAudit() { throw new Error('private upstream details') },
+    async updateLabels() { changed = true },
+  })
+  const call = makeContext({ action: 'set-role', userId: 'target', role: 'admin' })
+  await handler(call.context)
+  assert.equal(call.response.status, 500)
+  assert.equal(changed, false)
+  assert.doesNotMatch(JSON.stringify(call.response), /private upstream/)
+})
+
+test('role audit appends pending then truthful completion, or unknown error', async () => {
+  for (const failChange of [false, true]) {
+    const records = []
+    const order = []
+    const handler = createUserManagementHandler({
+      unique: () => 'operation-1',
+      async getUser(id) { return { $id: id, labels: id === 'admin-1' ? ['superadmin'] : ['subscriber'], prefs: { privateNote: 'secret' } } },
+      async createAudit(data) { order.push(data.status); records.push(data); return data },
+      async updateLabels(id, labels) {
+        order.push('change')
+        if (failChange) throw new Error('timeout')
+        return { $id: id, labels }
+      },
+    })
+    const call = makeContext({ action: 'set-role', userId: 'target', role: 'admin' })
+    await handler(call.context)
+    assert.deepEqual(order, ['pending', 'change', failChange ? 'error' : 'completed'])
+    assert.equal(call.response.status, failChange ? 500 : 200)
+    assert.equal(records[0].operationId, records[1].operationId)
+    assert.doesNotMatch(JSON.stringify(records), /secret|subscriber|privateNote/)
+    if (failChange) assert.equal(JSON.parse(records[1].after).outcome, 'unknown')
+  }
+})
+
+test('completion audit failure reports an applied role without claiming rollback', async () => {
+  let count = 0
+  const handler = createUserManagementHandler({
+    unique: () => 'operation-1',
+    async getUser(id) { return { $id: id, labels: id === 'admin-1' ? ['superadmin'] : [] } },
+    async createAudit(data) { if (++count === 2) throw new Error('down'); return data },
+    async updateLabels(id, labels) { return { $id: id, labels } },
+  })
+  const call = makeContext({ action: 'set-role', userId: 'target', role: 'admin' })
+  await handler(call.context)
+  assert.equal(call.response.status, 500)
+  assert.equal(call.response.payload.auditPending, true)
+  assert.equal(call.response.payload.user.role, 'admin')
 })
