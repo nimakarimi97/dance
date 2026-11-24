@@ -11,6 +11,8 @@ const name = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
 const error = ref('')
 const isLoading = ref(false)
 
@@ -50,6 +52,8 @@ function toggleMode() {
   mode.value = isRegistration.value ? 'login' : 'register'
   error.value = ''
   confirmPassword.value = ''
+  showPassword.value = false
+  showConfirmPassword.value = false
 }
 
 async function handleGoogleSignIn() {
@@ -83,23 +87,54 @@ async function handleGoogleSignIn() {
       <form class="form" @submit.prevent="submitAuth">
         <label v-if="isRegistration">
           Nome
-          <input v-model="name" type="text" name="name" autocomplete="name" required />
+          <input v-model="name" type="text" name="name" autocomplete="name" placeholder="Il tuo nome" required />
         </label>
         <label>
           Email
           <input v-model="email" type="email" name="email" autocomplete="email" inputmode="email" autocapitalize="none"
-            :spellcheck="false" required />
+            :spellcheck="false" placeholder="nome@esempio.com" required />
         </label>
         <label>
           Password
-          <input v-model="password" type="password" name="password"
-            :autocomplete="isRegistration ? 'new-password' : 'current-password'" minlength="8" required />
+          <span class="password-input">
+            <input v-model="password" :type="showPassword ? 'text' : 'password'" name="password"
+              :autocomplete="isRegistration ? 'new-password' : 'current-password'" placeholder="Almeno 8 caratteri"
+              minlength="8" required />
+            <button type="button" class="password-toggle" :aria-pressed="showPassword"
+              :aria-label="showPassword ? 'Nascondi password' : 'Mostra password'"
+              @click="showPassword = !showPassword">
+              <svg v-if="showPassword" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1 0 1.9-.2 2.8-.5" />
+              </svg>
+              <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </span>
         </label>
         <label v-if="isRegistration">
           Conferma password
-          <input v-model="confirmPassword" type="password" name="confirmPassword" autocomplete="new-password"
-            minlength="8" :aria-invalid="confirmPassword.length > 0 && password !== confirmPassword" :aria-describedby="confirmPassword.length > 0 && password !== confirmPassword ? 'password-mismatch' : undefined
-              " required />
+          <span class="password-input">
+            <input v-model="confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" name="confirmPassword"
+              autocomplete="new-password" placeholder="Ripeti la password" minlength="8"
+              :aria-invalid="confirmPassword.length > 0 && password !== confirmPassword"
+              :aria-describedby="confirmPassword.length > 0 && password !== confirmPassword ? 'password-mismatch' : undefined"
+              required />
+            <button type="button" class="password-toggle" :aria-pressed="showConfirmPassword"
+              :aria-label="showConfirmPassword ? 'Nascondi conferma password' : 'Mostra conferma password'"
+              @click="showConfirmPassword = !showConfirmPassword">
+              <svg v-if="showConfirmPassword" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1 0 1.9-.2 2.8-.5" />
+              </svg>
+              <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </span>
           <span v-if="confirmPassword.length > 0 && password !== confirmPassword" id="password-mismatch" class="hint">
             Le password non coincidono.
           </span>
@@ -138,9 +173,10 @@ async function handleGoogleSignIn() {
   animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   width: min(100%, 440px);
   padding: clamp(1.25rem, 5vw, 2.25rem);
-  border-radius: 28px;
-  background: var(--ink-2);
+  border-radius: 1rem;
+  background: linear-gradient(160deg, #172338, #101829);
   border: 1px solid var(--line);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.32);
 }
 
 h1 {
@@ -189,7 +225,7 @@ label {
 input {
   min-height: 3rem;
   padding: 0.7rem 0.9rem;
-  border-radius: 12px;
+  border-radius: 0.7rem;
   border: 1px solid var(--line);
   background: var(--ink);
   color: var(--text);
@@ -197,8 +233,49 @@ input {
   /* 16px avoids iOS zoom on focus */
 }
 
+.password-input {
+  position: relative;
+  display: block;
+}
+
+.password-input input {
+  width: 100%;
+  padding-right: 3.25rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.password-toggle:hover {
+  color: var(--text);
+}
+
+.password-toggle svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 input:focus {
-  border-color: var(--gold);
+  border-color: #a78bfa;
 }
 
 .errore {
@@ -230,6 +307,16 @@ input:focus {
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+}
+
+.toggle:hover:not(:disabled) {
+  color: #c4b5fd;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
 }
 
 @keyframes rise {

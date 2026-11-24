@@ -4,8 +4,10 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { dances, getFiguresForDance, refreshFigures } from '../data/danze.js'
 import { canAnimate, hasHover } from '../lib/motion.js'
-import { isLoggedIn } from '../lib/auth.js'
+import { currentUser, isLoggedIn } from '../lib/auth.js'
 import { isFeatureEnabled } from '../config/features.js'
+import { ANALYTICS_EVENTS } from '../lib/analytics.js'
+import { recordAnalyticsEvent } from '../lib/figures.js'
 import InstallGuide from '../components/InstallGuide.vue'
 
 const publicContent = isFeatureEnabled('publicContent')
@@ -80,6 +82,16 @@ function release(event) {
   if (hasHover() || !canAnimate()) return
   gsap.to(event.currentTarget, { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' })
 }
+
+function trackDanceClick(danceId) {
+  const userId = currentUser.value?.$id
+  if (!userId) return
+  recordAnalyticsEvent({
+    eventType: ANALYTICS_EVENTS.DANCE_CARD_CLICK,
+    eventTarget: danceId,
+    userId,
+  })
+}
 </script>
 
 <template>
@@ -96,7 +108,8 @@ function release(event) {
 
     <nav class="cards" aria-label="Danze">
       <RouterLink v-for="dance in cards" :key="dance.id" :to="{ name: 'danza', params: { danza: dance.id } }"
-        class="dance-card" :data-dance="dance.id" @pointermove="tilt" @pointerleave="resetTilt" @pointerdown="press"
+        class="dance-card" :data-dance="dance.id" @click="trackDanceClick(dance.id)" @pointermove="tilt"
+        @pointerleave="resetTilt" @pointerdown="press"
         @pointerup="release" @pointercancel="release">
         <span class="card-count">
           <template v-if="(isLoggedIn || publicContent) && dance.total">{{ dance.total }} {{ dance.total === 1 ? 'figura' : 'figure'
@@ -170,12 +183,12 @@ function release(event) {
   gap: 0.75rem;
   min-height: 280px;
   padding: clamp(1.25rem, 3vw, 2rem);
-  border-radius: 28px;
+  border-radius: 1.25rem;
   text-decoration: none;
   color: var(--text);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
   border: 1px solid var(--line);
-  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 20px 44px -30px rgba(0, 0, 0, 0.7);
   transform-style: preserve-3d;
   position: relative;
   overflow: hidden;
@@ -200,7 +213,7 @@ function release(event) {
 
 .dance-card:focus-visible {
   outline-offset: 4px;
-  border-radius: 28px;
+  border-radius: 1.25rem;
 }
 
 .dance-card>* {
@@ -253,9 +266,21 @@ function release(event) {
 
 .card-cta {
   padding: 0.65rem 1.1rem;
-  border-radius: 999px;
-  background: var(--text);
-  color: var(--ink);
+  border-radius: 0.75rem;
+  background: #e2e8f0;
+  color: #0f172a;
   font-weight: 700;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.dance-card:hover .card-cta {
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-cta {
+    transition: none;
+  }
 }
 </style>

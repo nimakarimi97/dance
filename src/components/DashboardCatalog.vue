@@ -3,6 +3,8 @@ import { computed, shallowRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import { dances } from '../data/danze.js'
 import { filterCatalog } from '../lib/catalog.js'
+import { ANALYTICS_EVENTS } from '../lib/analytics.js'
+import { recordAnalyticsEvent } from '../lib/figures.js'
 import StudioIcon from './StudioIcon.vue'
 
 const props = defineProps({
@@ -10,6 +12,7 @@ const props = defineProps({
   loading: Boolean,
   error: { type: String, default: '' },
   admin: Boolean,
+  userId: { type: String, default: '' },
 })
 
 defineEmits(['edit', 'create', 'retry'])
@@ -45,6 +48,16 @@ function resetFilters() {
   search.value = ''
   danceFilter.value = ''
   videoFilter.value = 'all'
+}
+
+function trackFigureOpen(figureId) {
+  if (!props.userId) return
+  recordAnalyticsEvent({
+    eventType: ANALYTICS_EVENTS.FIGURE_CARD_CLICK,
+    figureId,
+    eventTarget: figureId,
+    userId: props.userId,
+  })
 }
 </script>
 
@@ -128,7 +141,8 @@ function resetFilters() {
               <span class="dance-symbol" :data-dance="figure.danza" aria-hidden="true">{{ figure.danza === 'salsa' ? 'S'
                 : 'B' }}</span>
               <div class="figure-label">
-                <RouterLink :to="{ name: 'figura', params: { figura: figure.id } }" class="figure-name">{{ figure.nome
+                <RouterLink :to="{ name: 'figura', params: { figura: figure.id } }" class="figure-name"
+                  @click="trackFigureOpen(figure.id)">{{ figure.nome
                 }}</RouterLink>
                 <span class="figure-styles"><span class="mobile-dance">{{ dances[figure.danza]?.nome }} · </span>{{
                   styleNames(figure) }}</span>
@@ -185,10 +199,11 @@ function resetFilters() {
 <style scoped>
 .catalog {
   border: 1px solid var(--studio-line);
-  border-radius: 16px;
-  background: var(--studio-panel);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, var(--studio-panel), var(--studio-panel-soft, var(--studio-panel)));
   overflow: clip;
   scroll-margin-top: 5rem;
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.22);
 }
 
 .catalog-heading {
@@ -220,7 +235,7 @@ function resetFilters() {
   min-height: 2.75rem;
   border: 1px solid var(--studio-line);
   padding: 0.65rem 0.85rem;
-  border-radius: 9px;
+  border-radius: 0.75rem;
   color: var(--studio-text);
   background: var(--studio-raised);
   font-size: 0.875rem;
@@ -229,7 +244,7 @@ function resetFilters() {
 }
 
 .catalog-add:hover {
-  border-color: var(--studio-accent);
+  border-color: rgba(124, 58, 237, 0.6);
 }
 
 .catalog-toolbar {
@@ -246,7 +261,7 @@ function resetFilters() {
   flex: 1;
   min-width: 0;
   border: 1px solid var(--studio-line);
-  border-radius: 9px;
+  border-radius: 0.75rem;
   color: var(--studio-muted);
   background: var(--studio-bg);
 }
@@ -273,7 +288,7 @@ function resetFilters() {
   min-height: 2.85rem;
   max-width: 100%;
   border: 1px solid var(--studio-line);
-  border-radius: 9px;
+  border-radius: 0.75rem;
   padding: 0.5rem 1.8rem 0.5rem 0.7rem;
   background: var(--studio-bg);
   color: var(--studio-text);
@@ -309,7 +324,7 @@ function resetFilters() {
 
 .dance-filters button[aria-pressed='true'] {
   background: var(--studio-accent-soft);
-  color: var(--studio-accent);
+  color: #ddd6fe;
   font-weight: 700;
 }
 
@@ -333,7 +348,7 @@ function resetFilters() {
 .figure-table th {
   padding: 0.8rem 0.65rem;
   border-block: 1px solid var(--studio-line);
-  background: var(--studio-bg);
+  background: rgba(15, 23, 42, 0.62);
   color: var(--studio-muted);
   font-weight: 400;
   font-size: 0.75rem;
@@ -378,9 +393,9 @@ function resetFilters() {
   place-items: center;
   flex: 0 0 2.5rem;
   height: 2.5rem;
-  border-radius: 9px;
-  background: var(--studio-raised);
-  color: var(--accent-text);
+  border-radius: 0.7rem;
+  background: rgba(124, 58, 237, 0.14);
+  color: #ddd6fe;
   font-weight: 700;
 }
 
@@ -415,7 +430,7 @@ function resetFilters() {
 }
 
 .dance-tag {
-  color: var(--accent-text);
+  color: #c4b5fd;
   font-size: 0.8rem;
 }
 
@@ -447,7 +462,7 @@ function resetFilters() {
   min-width: 2.75rem;
   min-height: 2.75rem;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 0.65rem;
   background: none;
   color: var(--studio-muted);
   cursor: pointer;
@@ -455,7 +470,7 @@ function resetFilters() {
 
 .row-action:hover {
   border-color: var(--studio-line);
-  background: var(--studio-raised);
+  background: rgba(21, 32, 55, 0.85);
   color: var(--studio-text);
 }
 
@@ -485,7 +500,7 @@ function resetFilters() {
 .catalog-state>.studio-icon {
   width: 2rem;
   height: 2rem;
-  color: var(--studio-accent);
+  color: #c4b5fd;
 }
 
 .catalog-state h3 {

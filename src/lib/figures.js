@@ -1,5 +1,6 @@
 import { ID, Query } from 'appwrite'
 import { appwriteConfig, client, storage, tablesDB } from './appwrite.js'
+import { ANALYTICS_EVENTS } from './analytics.js'
 
 const table = () => ({
   databaseId: appwriteConfig.databaseId,
@@ -20,27 +21,43 @@ export async function listFigures() {
 }
 
 export async function recordFigureView(figureId, userId) {
-  await tablesDB.createRow({
-    databaseId: appwriteConfig.databaseId,
-    tableId: 'figure_views',
-    rowId: ID.unique(),
-    data: { figureId, userId },
-    permissions: [],
+  return recordAnalyticsEvent({
+    eventType: ANALYTICS_EVENTS.FIGURE_VIEW,
+    figureId,
+    userId,
   })
 }
 
-export async function listFigureViews() {
-  const views = []
+export async function recordAnalyticsEvent({ eventType, userId, figureId, eventTarget }) {
+  if (!userId) return
+  const data = { eventType, userId }
+  if (figureId) data.figureId = figureId
+  if (eventTarget) data.eventTarget = eventTarget
+  try {
+    await tablesDB.createRow({
+      databaseId: appwriteConfig.databaseId,
+      tableId: 'figure_views',
+      rowId: ID.unique(),
+      data,
+      permissions: [],
+    })
+  } catch (error) {
+    console.error(`Analytics event "${eventType}" could not be recorded.`, error)
+  }
+}
+
+export async function listAnalyticsEvents() {
+  const events = []
   let page
   do {
     page = await tablesDB.listRows({
       databaseId: appwriteConfig.databaseId,
       tableId: 'figure_views',
-      queries: [Query.limit(100), ...(views.length ? [Query.cursorAfter(views.at(-1).$id)] : [])],
+      queries: [Query.limit(100), ...(events.length ? [Query.cursorAfter(events.at(-1).$id)] : [])],
     })
-    views.push(...page.rows)
+    events.push(...page.rows)
   } while (page.rows.length === 100)
-  return views
+  return events
 }
 
 export const MAX_MEDIA_SIZE = 50_000_000

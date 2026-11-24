@@ -1,36 +1,37 @@
-import { AppwriteException, Permission, Query, Role } from 'appwrite'
-import { appwriteConfig, tablesDB } from './appwrite.js'
+import { appwriteConfig, functions } from './appwrite.js'
 
-const table = () => ({ databaseId: appwriteConfig.databaseId, tableId: appwriteConfig.userRolesTableId })
-
-// The row id is the user id, so each user has at most one role row.
-export async function ensureUserRole(user) {
-  try {
-    await tablesDB.getRow({ ...table(), rowId: user.$id })
-  } catch (error) {
-    if (!(error instanceof AppwriteException) || error.code !== 404) throw error
-    await tablesDB.createRow({
-      ...table(),
-      rowId: user.$id,
-      data: { userId: user.$id, name: user.name ?? '', email: user.email ?? '', role: 'user' },
-      permissions: [
-        Permission.read(Role.user(user.$id)),
-        Permission.read(Role.label('superadmin')),
-        Permission.update(Role.label('superadmin')),
-        Permission.delete(Role.label('superadmin')),
-      ],
-    })
-  }
-}
-
-export async function listUserRoles() {
-  const page = await tablesDB.listRows({
-    ...table(),
-    queries: [Query.limit(100), Query.orderAsc('name')],
+async function callUserManagement(payload) {
+  const execution = await functions.createExecution({
+    functionId: appwriteConfig.userManagementFunctionId,
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/json' },
+    async: false,
   })
-  return page.rows
+
+  let response
+  try {
+    response = JSON.parse(execution.responseBody || '{}')
+  } catch (cause) {
+    throw new Error('La funzione di gestione utenti ha restituito una risposta non valida.', { cause })
+  }
+
+  if (execution.responseStatusCode < 200 || execution.responseStatusCode >= 300) {
+    throw new Error(response.error || `Gestione utenti non riuscita (${execution.responseStatusCode}).`)
+  }
+  if (execution.status === 'failed') {
+    throw new Error('La funzione di gestione utenti non è riuscita.')
+  }
+  return response
 }
 
-export function setUserRole(userId, role) {
-  return tablesDB.updateRow({ ...table(), rowId: userId, data: { role } })
+export async function listUsers() {
+  const response = await callUserManagement({ action: 'list' })
+  if (!Array.isArray(response.users)) {
+    throw new Error('La funzione di gestione utenti non ha restituito una lista valida.')
+  }
+  return response.users
+}
+
+export async function setUserRole(userId, role) {
+  return callUserManagement({ action: 'set-role', userId, role })
 }

@@ -2,11 +2,13 @@
 import { gsap } from 'gsap'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { authError, ensureAuth, isLoggedIn } from './lib/auth.js'
+import { authError, currentUser, ensureAuth, isLoggedIn } from './lib/auth.js'
 import { isFeatureEnabled } from './config/features.js'
 import { dances, findDance, findFigure } from './data/danze.js'
 import { isOnline } from './lib/online.js'
 import { canAnimate } from './lib/motion.js'
+import { ANALYTICS_EVENTS } from './lib/analytics.js'
+import { recordAnalyticsEvent } from './lib/figures.js'
 
 const route = useRoute()
 const authEnabled = isFeatureEnabled('auth')
@@ -53,6 +55,12 @@ const pageTitle = computed(() => {
   return ''
 })
 
+const analyticsPageKey = computed(() => {
+  if (route.name === 'danza') return `danza:${route.params.danza}`
+  if (route.name === 'figura') return `figura:${route.params.figura}`
+  return route.name ? String(route.name) : ''
+})
+
 watch(
   pageTitle,
   (title) => {
@@ -61,10 +69,33 @@ watch(
   { immediate: true },
 )
 
+watch(
+  [analyticsPageKey, currentUser],
+  ([target, user]) => {
+    if (!target || !user?.$id) return
+    recordAnalyticsEvent({
+      eventType: ANALYTICS_EVENTS.PAGE_VIEW,
+      eventTarget: target,
+      userId: user.$id,
+    })
+  },
+  { immediate: true },
+)
+
 function focusMain() {
   const main = document.querySelector('main')
   main?.setAttribute('tabindex', '-1')
   main?.focus()
+}
+
+function trackNavigation(target) {
+  const userId = currentUser.value?.$id
+  if (!userId) return
+  recordAnalyticsEvent({
+    eventType: ANALYTICS_EVENTS.APP_NAV_CLICK,
+    eventTarget: target,
+    userId,
+  })
 }
 </script>
 
@@ -79,7 +110,7 @@ function focusMain() {
     <a href="#/" class="skip" @click.prevent="focusMain">Vai al contenuto</a>
 
     <header class="topbar">
-      <RouterLink to="/" class="brand">
+      <RouterLink to="/" class="brand" @click="trackNavigation('home')">
         <img class="brand-mark" src="/pwa-192.png" alt="" aria-hidden="true" />
         <span class="brand-name" translate="no">Salsa &amp; Bachata</span>
       </RouterLink>
@@ -106,7 +137,7 @@ function focusMain() {
     </footer>
 
     <nav class="tabs" aria-label="Principale">
-      <RouterLink to="/" class="tab" :class="{ 'tab-on': route.name === 'home' }"
+      <RouterLink to="/" class="tab" :class="{ 'tab-on': route.name === 'home' }" @click="trackNavigation('home')"
         :aria-current="route.name === 'home' ? 'page' : undefined">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" />
@@ -115,6 +146,7 @@ function focusMain() {
       </RouterLink>
       <RouterLink v-for="dance in danceList" :key="dance.id" :to="{ name: 'danza', params: { danza: dance.id } }"
         class="tab" :class="{ 'tab-on': activeDance === dance.id }" :data-dance="dance.id"
+        @click="trackNavigation(`dance:${dance.id}`)"
         :aria-current="activeDance === dance.id ? 'page' : undefined">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M9 18V5l11-2v13M9 18a3 3 0 1 1-3-3 3 3 0 0 1 3 3zm11-2a3 3 0 1 1-3-3 3 3 0 0 1 3 3z" />
@@ -123,6 +155,7 @@ function focusMain() {
       </RouterLink>
       <RouterLink v-if="authEnabled" :to="isLoggedIn ? { name: 'dashboard' } : { name: 'auth' }" class="tab"
         :class="{ 'tab-on': route.name === 'auth' || route.name === 'dashboard' }"
+        @click="trackNavigation(isLoggedIn ? 'dashboard' : 'auth')"
         :aria-current="route.name === 'auth' || route.name === 'dashboard' ? 'page' : undefined">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 8a8 8 0 0 1 16 0z" />
@@ -143,7 +176,7 @@ function focusMain() {
 }
 
 .app--dashboard {
-  background: #111b2d;
+  background: #090d1a;
 }
 
 .app--dashboard .blobs {
@@ -212,7 +245,7 @@ function focusMain() {
   align-items: center;
   padding: 0.5rem clamp(1rem, 4vw, 3rem);
   padding-top: calc(0.5rem + env(safe-area-inset-top));
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(9, 13, 26, 0.86);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
 }
@@ -278,7 +311,7 @@ function focusMain() {
   display: flex;
   height: calc(var(--nav-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(9, 13, 26, 0.96);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--line);
 }
@@ -333,12 +366,17 @@ function focusMain() {
     flex-direction: row;
     gap: 0.5rem;
     padding: 0 1rem;
-    border-radius: 999px;
+    border-radius: 0.8rem;
     font-size: 0.95rem;
   }
 
   .tab:hover {
-    background: var(--ink-2);
+    background: rgba(30, 41, 59, 0.72);
+  }
+
+  .tab-on:not([data-dance]) {
+    background: rgba(124, 58, 237, 0.16);
+    color: #c4b5fd;
   }
 
   .footer {
