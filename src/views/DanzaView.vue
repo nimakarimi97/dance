@@ -136,7 +136,8 @@ onBeforeUnmount(() => {
 
       <div class="controls">
         <label class="search">
-          <span class="search-label"><StudioIcon name="search" /> Cerca una figura</span>
+          <span class="visually-hidden">Cerca una figura</span>
+          <StudioIcon name="search" aria-hidden="true" />
           <input v-model="searchText" type="search" name="figura" autocomplete="off" enterkeyhint="search"
             placeholder="Cerca, ad esempio Enchufla…" @input="onSearch" />
         </label>
@@ -262,7 +263,7 @@ onBeforeUnmount(() => {
 .controls {
   display: grid;
   gap: 0.75rem;
-  padding: 1rem;
+  padding: 1.25rem;
   border-radius: 1rem;
   background: var(--ink-2);
   border: 1px solid var(--line);
@@ -278,10 +279,25 @@ onBeforeUnmount(() => {
   flex: none;
 }
 
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search > .studio-icon {
+  position: absolute;
+  left: 1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--muted);
+  pointer-events: none;
+}
+
 .search input {
   width: 100%;
   min-height: 3rem;
-  padding: 0.6rem 1.1rem;
+  padding: 0.6rem 1.1rem 0.6rem 2.8rem;
   border-radius: 999px;
   border: 1px solid var(--input-line);
   background: var(--input-bg);
@@ -296,7 +312,6 @@ onBeforeUnmount(() => {
 .search input::placeholder {
   color: var(--muted);
 }
-.search-label { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-weight: 600; }
 
 .count {
   color: var(--muted);
@@ -373,10 +388,16 @@ onBeforeUnmount(() => {
 
 @media (min-width: 760px) {
   .controls {
-    grid-template-columns: minmax(0, 340px) 1fr;
+    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
     align-items: center;
-    margin-inline: 0;
-    padding-inline: 1rem;
+    column-gap: 1rem;
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (max-width: 759px) {
+  .controls {
+    padding: 1rem;
   }
 }
 </style>
