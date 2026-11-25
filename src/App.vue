@@ -119,7 +119,7 @@ function trackNavigation(target) {
           <span>{{ dance.nome }}</span>
         </RouterLink>
         <RouterLink v-if="authEnabled" :to="isLoggedIn ? { name: 'dashboard' } : { name: 'auth' }" class="tab"
-          :class="{ 'tab-on': route.name === 'auth' || route.name === 'dashboard' }"
+          :class="{ 'tab--dashboard': isLoggedIn, 'tab-on': route.name === 'auth' || route.name === 'dashboard' }"
           @click="trackNavigation(isLoggedIn ? 'dashboard' : 'auth')"
           :aria-current="route.name === 'auth' || route.name === 'dashboard' ? 'page' : undefined">
           <StudioIcon :name="isLoggedIn ? 'grid' : 'user'" />
@@ -324,6 +324,10 @@ function trackNavigation(target) {
     padding: 0 0.75rem;
     border-radius: 0.8rem;
     font-size: 0.95rem;
+  }
+
+  .tab--dashboard {
+    padding-inline: 1.5rem;
   }
 
   .tab:hover {
