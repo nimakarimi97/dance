@@ -18,6 +18,10 @@ const root = ref(null)
 let animationContext = null
 
 const title = 'Salsa & Bachata'
+const danceIcons = {
+  salsa: '/dance-icons/salsa-couple.svg',
+  bachata: '/dance-icons/bachata-embrace.svg',
+}
 const titleLength = title.replaceAll(' ', '').length
 // Each letter gets its share of the gradient as a solid colour, so glyphs that overflow their box are never clipped.
 const titleWords = title.split(' ').reduce((words, word) => {
@@ -37,6 +41,7 @@ const cards = computed(() =>
     const figures = getFiguresForDance(dance.id)
     return {
       ...dance,
+      icon: danceIcons[dance.id],
       total: figures.length,
       videos: figures.filter((figure) => figure.youtubeId || figure.videoFileId).length,
     }
@@ -132,7 +137,13 @@ function trackDanceClick(danceId) {
           }}<template v-if="dance.videos">, {{ dance.videos }} con video</template></template>
           <template v-else>{{ publicContent ? 'Nessuna figura disponibile' : 'Figure e video riservati agli iscritti' }}</template>
         </span>
-        <h2 class="card-title">{{ dance.nome }}</h2>
+        <span class="card-heading">
+          <h2 class="card-title">{{ dance.nome }}</h2>
+          <span class="card-illustration" :style="{
+            maskImage: `url(${dance.icon})`,
+            WebkitMaskImage: `url(${dance.icon})`,
+          }" aria-hidden="true"></span>
+        </span>
         <p class="card-desc">{{ dance.descrizione }}</p>
         <span class="card-foot">
           <span class="card-stili">
@@ -234,6 +245,23 @@ function trackDanceClick(danceId) {
   font-family: 'Caveat', cursive;
   font-size: clamp(3.6rem, 12vw, 5.5rem);
   font-weight: 700;
+}
+
+.card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.card-illustration {
+  width: clamp(4.5rem, 16vw, 6rem);
+  height: clamp(4.5rem, 16vw, 6rem);
+  flex: 0 0 auto;
+  background-color: var(--accent);
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
 }
 
 .card-desc {

@@ -16,6 +16,10 @@ const route = useRoute()
 const authEnabled = isFeatureEnabled('auth')
 const offlineEnabled = isFeatureEnabled('offline')
 const themeEnabled = isFeatureEnabled('theme')
+const danceIcons = {
+  salsa: '/dance-icons/salsa-couple.svg',
+  bachata: '/dance-icons/bachata-embrace.svg',
+}
 const danceList = Object.values(dances)
 const baseTitle = 'Salsa & Bachata · Figure'
 
@@ -115,7 +119,10 @@ function trackNavigation(target) {
         <RouterLink v-for="dance in danceList" :key="dance.id" :to="{ name: 'danza', params: { danza: dance.id } }"
           class="tab" :class="{ 'tab-on': activeDance === dance.id }" :data-dance="dance.id"
           @click="trackNavigation(`dance:${dance.id}`)" :aria-current="activeDance === dance.id ? 'page' : undefined">
-          <StudioIcon name="dance" />
+          <span class="tab-dance-icon" :style="{
+            maskImage: `url(${danceIcons[dance.id]})`,
+            WebkitMaskImage: `url(${danceIcons[dance.id]})`,
+          }" aria-hidden="true"></span>
           <span>{{ dance.nome }}</span>
         </RouterLink>
         <RouterLink v-if="authEnabled" :to="isLoggedIn ? { name: 'dashboard' } : { name: 'auth' }" class="tab"
@@ -292,6 +299,16 @@ function trackNavigation(target) {
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.tab-dance-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
 }
 
 .tab-on {
