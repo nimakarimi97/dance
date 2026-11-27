@@ -135,7 +135,7 @@ async function handleGoogleSignIn() {
               </svg>
             </button>
           </span>
-          <span v-if="confirmPassword.length > 0 && password !== confirmPassword" id="password-mismatch" class="hint">
+          <span v-if="confirmPassword.length > 0 && password !== confirmPassword" id="password-mismatch" class="hint warning">
             Le password non coincidono.
           </span>
         </label>
@@ -290,6 +290,14 @@ input:focus {
   margin: 0;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.warning {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--warning);
+  border-radius: 0.55rem;
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning);
 }
 
 .submit {
