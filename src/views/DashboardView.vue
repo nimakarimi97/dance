@@ -46,7 +46,7 @@ const sectionItems = computed(() => {
     { id: 'panoramica', label: 'Panoramica', icon: 'grid' },
     { id: 'catalogo', label: 'Catalogo', icon: 'library' },
   ]
-  if (isAdmin.value) items.push({ id: 'visualizzazioni', label: 'Analytics', icon: 'video' })
+  if (isAdmin.value) items.push({ id: 'visualizzazioni', label: 'Statistiche', icon: 'video' })
   if (isSuperAdmin.value) items.push({ id: 'utenti', label: 'Utenti', icon: 'user' })
   items.push({ id: 'account', label: 'Account', icon: 'shield' })
   return items
