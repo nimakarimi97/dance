@@ -3,4 +3,4 @@ dist
 *.local
 .env
 .DS_Store
-/skills/
+.agents/skills/
