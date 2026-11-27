@@ -55,6 +55,8 @@ frontend di questo branch; la build non modifica automaticamente Appwrite.
 
 ## Utilizzo
 
+La registrazione via email richiede nome e cognome e li salva come nome visualizzato dell'account Appwrite.
+
 Nella scheda figura: preferito, progresso, note e aggiunta alle liste. **Salva la mia pratica** conferma il salvataggio remoto, senza ottimismo fuorviante. In **Profilo → La mia pratica** si trovano preferiti, raccolte per progresso e creazione/modifica/eliminazione liste. Le figure non più disponibili restano indicate nelle liste e sono rimovibili dall'editor senza perdere le altre voci.
 
 Se il servizio non è ancora configurato, l'app mostra l'errore e permette di riprovare; non simula salvataggi locali riusciti.

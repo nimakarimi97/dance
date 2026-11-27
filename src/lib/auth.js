@@ -98,8 +98,19 @@ export async function signInWithEmail(email, password) {
   if (!isLoggedIn.value) throw new Error(state.error || 'Sessione non disponibile. Riprova.')
 }
 
-export async function registerWithEmail({ name, email, password, confirmPassword }) {
+export async function signInWithMagicUrlToken(userId, secret) {
+  await account.createSession({ userId, secret })
+  await refreshUser()
+  if (!isLoggedIn.value) throw new Error(state.error || 'Sessione non disponibile dopo l’accesso tramite link. Riprova.')
+}
+
+export async function registerWithEmail({ firstName, lastName, email, password, confirmPassword }) {
   if (password !== confirmPassword) throw new Error('Le password non coincidono.')
+  if ([firstName, lastName].some(value => typeof value !== 'string' || !value.trim())) {
+    throw new Error('Inserisci nome e cognome.')
+  }
+  const name = [firstName, lastName].map(value => value.trim()).join(' ')
+  if (name.length > 128) throw new Error('Nome e cognome non possono superare 128 caratteri.')
   await account.create({ userId: ID.unique(), email, password, name })
   await signInWithEmail(email, password)
 }

@@ -7,7 +7,8 @@ const route = useRoute()
 const router = useRouter()
 
 const mode = ref('login')
-const name = ref('')
+const firstName = ref('')
+const lastName = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
@@ -32,7 +33,8 @@ async function submitAuth() {
   try {
     if (isRegistration.value) {
       await registerWithEmail({
-        name: name.value.trim(),
+        firstName: firstName.value,
+        lastName: lastName.value,
         email: email.value.trim(),
         password: password.value,
         confirmPassword: confirmPassword.value,
@@ -87,7 +89,13 @@ async function handleGoogleSignIn() {
       <form class="form" @submit.prevent="submitAuth">
         <label v-if="isRegistration">
           Nome
-          <input v-model="name" type="text" name="name" autocomplete="name" placeholder="Il tuo nome" required />
+          <input v-model="firstName" type="text" name="given-name" autocomplete="given-name" placeholder="Il tuo nome"
+            maxlength="128" required />
+        </label>
+        <label v-if="isRegistration">
+          Cognome
+          <input v-model="lastName" type="text" name="family-name" autocomplete="family-name"
+            placeholder="Il tuo cognome" maxlength="128" required />
         </label>
         <label>
           Email

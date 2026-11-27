@@ -29,9 +29,36 @@ after(() => server.close())
 test('signup rejects mismatched confirmation before creating an account', async () => {
   const create = mock.method(account, 'create', async () => {})
   await assert.rejects(auth.registerWithEmail({
-    name: 'Test', email: 'test@example.com', password: 'password-one', confirmPassword: 'password-two',
+    firstName: 'Test', lastName: 'Person', email: 'test@example.com', password: 'password-one', confirmPassword: 'password-two',
   }), /password non coincidono/)
   assert.equal(create.mock.callCount(), 0)
+})
+
+test('signup requires first and last names and saves a combined Appwrite display name', async () => {
+  const create = mock.method(account, 'create', async () => {})
+  await assert.rejects(auth.registerWithEmail({
+    firstName: 'Test', lastName: ' ', email: 'test@example.com',
+    password: 'matching-password', confirmPassword: 'matching-password',
+  }), /nome e cognome/)
+  assert.equal(create.mock.callCount(), 0)
+  mock.method(account, 'createEmailPasswordSession', async () => {})
+  mock.method(account, 'get', async () => ({ $id: 'member', labels: [] }))
+  await auth.registerWithEmail({
+    firstName: ' Ada ', lastName: ' Lovelace ', email: 'test@example.com',
+    password: 'matching-password', confirmPassword: 'matching-password',
+  })
+  assert.equal(create.mock.calls[0].arguments[0].name, 'Ada Lovelace')
+})
+
+test('magic URL callback exchanges the Appwrite token for a session', async () => {
+  const createSession = mock.method(account, 'createSession', async () => {})
+  mock.method(account, 'get', async () => ({ $id: 'magic-user', labels: [] }))
+  await auth.signInWithMagicUrlToken('magic-user', 'one-time-secret')
+  assert.deepEqual(createSession.mock.calls[0].arguments[0], {
+    userId: 'magic-user',
+    secret: 'one-time-secret',
+  })
+  assert.equal(auth.currentUser.value.$id, 'magic-user')
 })
 
 test('signup creates a session and derives admin only from server labels', async () => {
@@ -39,7 +66,7 @@ test('signup creates a session and derives admin only from server labels', async
   const session = mock.method(account, 'createEmailPasswordSession', async () => {})
   const get = mock.method(account, 'get', async () => ({ $id: 'member', labels: [], prefs: { role: 'admin' } }))
   await auth.registerWithEmail({
-    name: 'Test', email: 'test@example.com', password: 'matching-password', confirmPassword: 'matching-password',
+    firstName: 'Test', lastName: 'Person', email: 'test@example.com', password: 'matching-password', confirmPassword: 'matching-password',
   })
   assert.equal(create.mock.callCount(), 1)
   assert.equal(session.mock.callCount(), 1)
