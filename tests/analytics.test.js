@@ -1,6 +1,24 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { buildEventTimeline, buildViewTimeline, summarizeViews } from '../src/lib/analytics.js'
+import { buildEventTimeline, buildViewTimeline, summarizeFavorites, summarizeViews } from '../src/lib/analytics.js'
+
+test('favorite summary ranks current saves and ignores figures outside the catalog', () => {
+  const favorites = [
+    { figureId: 'b', count: 3 },
+    { figureId: 'a', count: 3 },
+    { figureId: 'missing', count: 5 },
+  ]
+  const figures = [
+    { id: 'a', nome: 'Alfa' },
+    { id: 'b', nome: 'Beta' },
+    { id: 'c', nome: 'Gamma' },
+  ]
+
+  assert.deepEqual(summarizeFavorites(favorites, figures), [
+    { id: 'a', nome: 'Alfa', favorites: 3 },
+    { id: 'b', nome: 'Beta', favorites: 3 },
+  ])
+})
 
 test('event summary separates views, clicks and admin actions', () => {
   const figures = [

@@ -35,6 +35,33 @@ export async function saveAdminFigure({ id, data, expectedUpdatedAt }) {
   if (!result.figure?.$id) throw Object.assign(new Error('Figura salvata non confermata: ricarica il repertorio.'), { outcome: 'unknown' })
   return result.figure
 }
+export async function deleteAdminFigure({ id, expectedUpdatedAt }) {
+  const result = await invoke(appwriteConfig.libraryFunctionId, { service: 'figures', action: 'delete', id, expectedUpdatedAt })
+  if (result.deleted !== id) throw Object.assign(new Error('Eliminazione non confermata: ricarica il repertorio.'), { outcome: 'unknown' })
+  return result.deleted
+}
+export async function listFavoriteStats() {
+  const result = await invoke(appwriteConfig.libraryFunctionId, { service: 'figures', action: 'favoriteStats' })
+  if (!Array.isArray(result.favorites) || !result.favorites.every(item =>
+    typeof item?.figureId === 'string' && Number.isInteger(item.count) && item.count > 0,
+  )) {
+    throw new Error('Dati dei preferiti non validi. Ricarica le statistiche.')
+  }
+  return result.favorites
+}
+export async function listUserUsageStats() {
+  const result = await invoke(appwriteConfig.libraryFunctionId, { service: 'figures', action: 'usageStats' })
+  const validCount = value => Number.isInteger(value) && value >= 0
+  if (!Array.isArray(result.users) || !result.users.every(user =>
+    typeof user?.userId === 'string' && typeof user.name === 'string'
+    && validCount(user.pageViews) && validCount(user.figureViews) && validCount(user.clicks)
+    && validCount(user.totalActivity)
+    && [user.mostVisitedArea, user.mostViewedFigureId, user.mostClickedTarget].every(value => value === null || typeof value === 'string'),
+  )) {
+    throw new Error('Dati delle attività utenti non validi. Ricarica le statistiche.')
+  }
+  return result.users
+}
 export const applyFigureRows = rows => invoke(appwriteConfig.libraryFunctionId, { service: 'figures', action: 'apply', rows })
 export const listFigureAudit = ({ cursor, limit = 25 } = {}) => invoke(appwriteConfig.libraryFunctionId, { service: 'figures', action: 'audit', cursor, limit })
 export const listRoleAudit = ({ cursor, limit = 25 } = {}) => invoke(appwriteConfig.userManagementFunctionId, { action: 'audit', cursor, limit })

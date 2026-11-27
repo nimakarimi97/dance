@@ -5,6 +5,7 @@ import { currentUser, isAdmin, isSuperAdmin, signOut } from '../lib/auth.js'
 import { figures, refreshFigures, useFigureCatalog } from '../data/danze.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
 import { recordAnalyticsEvent } from '../lib/figures.js'
+import { deleteAdminFigure } from '../lib/admin-api.js'
 import { isFeatureEnabled } from '../config/features.js'
 import DashboardCatalog from '../components/DashboardCatalog.vue'
 import AdminUserRoles from '../components/AdminUserRoles.vue'
@@ -24,6 +25,9 @@ const signOutError = shallowRef('')
 const editing = shallowRef(false)
 const selectedFigure = shallowRef(null)
 const savedId = shallowRef('')
+const deletingFigureId = shallowRef('')
+const deleteError = shallowRef('')
+const deleteMessage = shallowRef('')
 const videoFilter = shallowRef('all')
 const sectionHeading = useTemplateRef('section-heading')
 const personalPractice = useTemplateRef('personal-practice')
@@ -155,6 +159,27 @@ async function onSaved(id) {
   await refreshing
 }
 
+async function deleteFigure(figure) {
+  if (!isAdmin.value || deletingFigureId.value) return
+  const id = figure.id || figure.$id
+  if (!id || !figure.$updatedAt) {
+    deleteError.value = 'Impossibile verificare la versione della figura. Ricarica il catalogo.'
+    return
+  }
+  deletingFigureId.value = id
+  deleteError.value = ''
+  deleteMessage.value = ''
+  try {
+    await deleteAdminFigure({ id, expectedUpdatedAt: figure.$updatedAt })
+    await refreshFigures()
+    deleteMessage.value = 'Figura eliminata.'
+  } catch (cause) {
+    deleteError.value = cause.message || 'Eliminazione non riuscita. Ricarica il catalogo prima di riprovare.'
+  } finally {
+    deletingFigureId.value = ''
+  }
+}
+
 function showMissingVideos() {
   videoFilter.value = 'missing'
   showSection('catalogo')
@@ -265,9 +290,11 @@ async function signOutUser() {
 
       </template>
 
+      <p v-if="activeSection === 'catalogo' && deleteError" class="account-error" role="alert">{{ deleteError }}</p>
+      <p v-if="activeSection === 'catalogo' && deleteMessage" role="status">{{ deleteMessage }}</p>
       <DashboardCatalog v-if="activeSection === 'catalogo'" :figures="figures" :loading="loading" :error="error"
-        :admin="isAdmin && figureEditorEnabled" :user-id="currentUser?.$id" v-model:video-filter="videoFilter" @create="openEditor()"
-        @edit="openEditor" @retry="retry" />
+        :admin="isAdmin && figureEditorEnabled" :deleting-id="deletingFigureId" :user-id="currentUser?.$id" v-model:video-filter="videoFilter" @create="openEditor()"
+        @edit="openEditor" @delete="deleteFigure" @retry="retry" />
 
       <PersonalPractice v-if="activeSection === 'pratica'" ref="personal-practice" :figures="figures" :catalog-loading="loading" :catalog-error="error" />
       <AdminAnalytics v-if="isAdmin && activeSection === 'visualizzazioni'" />

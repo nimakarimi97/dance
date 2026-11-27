@@ -18,15 +18,17 @@ test('single saves and imports use synchronous trusted function actions without 
   const calls = []
   mock.method(functions, 'createExecution', async params => {
     calls.push(params)
-    return { status: 'completed', responseStatusCode: 200, responseBody: JSON.stringify({ figure: { $id: 'saved' }, figures: [{ $id: 'saved' }] }) }
+    return { status: 'completed', responseStatusCode: 200, responseBody: JSON.stringify({ figure: { $id: 'saved' }, figures: [{ $id: 'saved' }], deleted: 'existing' }) }
   })
   const data = { nome: 'Test' }
   assert.equal((await api.saveAdminFigure({ id: 'existing', data, userId: 'spoof' })).$id, 'saved')
   await api.applyFigureRows([{ id: 'existing', data }])
+  await api.deleteAdminFigure({ id: 'existing', expectedUpdatedAt: '2026-01-01T00:00:00Z' })
   assert.equal(calls[0].functionId, 'dance-library')
   assert.equal(calls[0].async, false)
   assert.deepEqual(JSON.parse(calls[0].body), { service: 'figures', action: 'save', id: 'existing', data })
   assert.deepEqual(JSON.parse(calls[1].body), { service: 'figures', action: 'apply', rows: [{ id: 'existing', data }] })
+  assert.deepEqual(JSON.parse(calls[2].body), { service: 'figures', action: 'delete', id: 'existing', expectedUpdatedAt: '2026-01-01T00:00:00Z' })
 })
 
 test('audit calls route to their respective backends with cursor pagination', async () => {
@@ -40,6 +42,34 @@ test('audit calls route to their respective backends with cursor pagination', as
   assert.equal(calls[0].functionId, 'dance-library')
   assert.equal(calls[1].functionId, 'dance-user-management')
   assert.deepEqual(JSON.parse(calls[0].body), { service: 'figures', action: 'audit', cursor: 'last', limit: 10 })
+})
+
+test('favorite and named usage analytics use the admin-only library function', async () => {
+  const calls = []
+  mock.method(functions, 'createExecution', async params => {
+    calls.push(params)
+    const action = JSON.parse(params.body).action
+    return {
+      status: 'completed',
+      responseStatusCode: 200,
+      responseBody: JSON.stringify(action === 'favoriteStats'
+        ? { favorites: [{ figureId: 'figure-1', count: 2 }] }
+        : { users: [{
+          userId: 'member', name: 'Ada Lovelace', pageViews: 2, figureViews: 1, clicks: 3,
+          totalActivity: 6, mostVisitedArea: 'dashboard', mostViewedFigureId: 'figure-1',
+          mostClickedTarget: 'figure-1',
+        }] }),
+    }
+  })
+  assert.deepEqual(await api.listFavoriteStats(), [{ figureId: 'figure-1', count: 2 }])
+  assert.deepEqual(await api.listUserUsageStats(), [{
+    userId: 'member', name: 'Ada Lovelace', pageViews: 2, figureViews: 1, clicks: 3,
+    totalActivity: 6, mostVisitedArea: 'dashboard', mostViewedFigureId: 'figure-1',
+    mostClickedTarget: 'figure-1',
+  }])
+  assert.ok(calls.every(call => call.functionId === 'dance-library' && call.async === false))
+  assert.deepEqual(JSON.parse(calls[0].body), { service: 'figures', action: 'favoriteStats' })
+  assert.deepEqual(JSON.parse(calls[1].body), { service: 'figures', action: 'usageStats' })
 })
 
 test('backend validation errors preserve row details and pending role status', async () => {

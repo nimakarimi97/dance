@@ -15,8 +15,9 @@ import {
 } from 'chart.js'
 import { computed, onMounted, shallowRef } from 'vue'
 import { dances, figures } from '../data/danze.js'
-import { buildEventTimeline, summarizeViews } from '../lib/analytics.js'
+import { buildEventTimeline, summarizeFavorites, summarizeViews } from '../lib/analytics.js'
 import { listAnalyticsEvents } from '../lib/figures.js'
+import { listFavoriteStats, listUserUsageStats } from '../lib/admin-api.js'
 import { isDarkMode } from '../lib/theme.js'
 import StudioLoader from './StudioLoader.vue'
 
@@ -33,6 +34,8 @@ const ranges = [
 ]
 
 const events = shallowRef(null)
+const favoriteCounts = shallowRef([])
+const userUsage = shallowRef([])
 const loading = shallowRef(true)
 const error = shallowRef('')
 const range = shallowRef(30)
@@ -66,6 +69,9 @@ const chartSummary = computed(() => {
   return `${number(stats.value?.totalPageViews ?? 0)} visite di pagina, ${number(stats.value?.totalClicks ?? 0)} click e ${number(stats.value?.adminActions ?? 0)} azioni amministrative nel periodo.`
 })
 const topFigures = computed(() => stats.value?.top ?? [])
+const favoriteRanking = computed(() => summarizeFavorites(favoriteCounts.value, figures.value).slice(0, 5))
+const totalFavorites = computed(() => favoriteCounts.value.reduce((total, item) => total + item.count, 0))
+const activeUsers = computed(() => userUsage.value.slice(0, 5))
 const danceChartData = computed(() => ({
   labels: stats.value?.byDance.map((item) => item.nome) ?? [],
   datasets: [{
@@ -226,11 +232,37 @@ function number(value) {
   return new Intl.NumberFormat('it-IT').format(value)
 }
 
+function targetName(target) {
+  if (!target) return '—'
+  const figure = figures.value.find(item => item.id === target)
+  if (figure) return figure.nome
+  const danceId = target.startsWith('danza:') ? target.slice(6) : target
+  if (dances[danceId]) return dances[danceId].nome
+  const labels = {
+    home: 'Home',
+    dashboard: 'Dashboard',
+    account: 'Account',
+    catalogo: 'Catalogo',
+    visualizzazioni: 'Analytics',
+    utenti: 'Utenti',
+    pratica: 'Pratica',
+  }
+  return labels[target] || target
+}
+
 async function load() {
   loading.value = true
   error.value = ''
   try {
-    events.value = await listAnalyticsEvents()
+    // Supplementary panels must not block the core analytics if the admin function is unavailable.
+    const [analyticsEvents, favorites, usage] = await Promise.all([
+      listAnalyticsEvents(),
+      listFavoriteStats().catch(() => []),
+      listUserUsageStats().catch(() => []),
+    ])
+    events.value = analyticsEvents
+    favoriteCounts.value = favorites
+    userUsage.value = usage
     now.value = Date.now()
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Impossibile caricare le statistiche.'
@@ -432,6 +464,49 @@ onMounted(load)
             </li>
           </ol>
           <p v-else class="empty-note">Nessun click sulle schede nel periodo selezionato.</p>
+        </section>
+
+        <section class="panel ranking-panel" aria-labelledby="favorite-ranking-title">
+          <div class="panel-heading">
+            <div>
+              <h3 id="favorite-ranking-title">Preferite dalla community</h3>
+              <p>Preferiti salvati attualmente; indipendenti dal periodo selezionato.</p>
+            </div>
+            <span class="ranking-mark">{{ number(totalFavorites) }} salvataggi</span>
+          </div>
+          <ol v-if="favoriteRanking.length" class="ranking-list">
+            <li v-for="(figure, index) in favoriteRanking" :key="figure.id">
+              <span class="rank-number">{{ String(index + 1).padStart(2, '0') }}</span>
+              <span class="rank-name">{{ figure.nome }}</span>
+              <strong>{{ number(figure.favorites) }}</strong>
+            </li>
+          </ol>
+          <p v-else class="empty-note">Non ci sono ancora preferiti salvati.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="user-usage-title">
+          <div class="panel-heading">
+            <div>
+              <h3 id="user-usage-title">Chi usa di più l’app</h3>
+              <p>Totale dall’azzeramento, indipendente dal periodo; email e dati privati non sono mostrati.</p>
+            </div>
+            <span class="ranking-mark">Top 5</span>
+          </div>
+          <ol v-if="activeUsers.length" class="user-ranking-list">
+            <li v-for="(user, index) in activeUsers" :key="user.userId">
+              <div class="user-ranking-heading">
+                <span class="rank-number">{{ String(index + 1).padStart(2, '0') }}</span>
+                <strong>{{ user.name }}</strong>
+                <span class="user-activity-total">{{ number(user.totalActivity) }} attività</span>
+              </div>
+              <p>{{ number(user.pageViews) }} visite · {{ number(user.figureViews) }} aperture · {{ number(user.clicks) }} click</p>
+              <p class="user-activity-detail">
+                Area: {{ targetName(user.mostVisitedArea) }} · Figura più vista:
+                {{ targetName(user.mostViewedFigureId) }} · Click più frequente: {{ targetName(user.mostClickedTarget) }}
+              </p>
+            </li>
+          </ol>
+          <p v-else class="empty-note">I dati per account appariranno con le prossime attività.</p>
         </section>
 
         <section class="panel breakdown-panel" aria-labelledby="dance-title">
@@ -804,6 +879,51 @@ onMounted(load)
   border-top: 1px solid var(--analytics-line);
   color: var(--analytics-muted);
   font-size: 0.8rem;
+}
+
+.user-ranking-list {
+  display: grid;
+  gap: 0.8rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.user-ranking-list li {
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--analytics-line);
+}
+
+.user-ranking-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.user-ranking-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+}
+
+.user-ranking-heading strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.user-activity-total {
+  margin-left: auto;
+  color: var(--analytics-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.user-ranking-list p {
+  margin: 0.3rem 0 0 2.65rem;
+  color: var(--analytics-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .empty-note,

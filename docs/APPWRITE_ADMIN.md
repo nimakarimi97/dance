@@ -115,6 +115,8 @@ Optional server configuration:
 ```text
 APPWRITE_DATABASE_ID=dance
 APPWRITE_FIGURES_TABLE_ID=figures
+APPWRITE_FIGURE_PRACTICE_TABLE_ID=figure_practice
+APPWRITE_ANALYTICS_TABLE_ID=figure_views
 APPWRITE_FIGURE_AUDIT_TABLE_ID=figure_audit
 APPWRITE_ROLE_AUDIT_TABLE_ID=role_audit
 ```
@@ -172,6 +174,12 @@ All actions are POST JSON via synchronous authenticated Function executions.
 
 * `saveAdminFigure({id?, data, expectedUpdatedAt?})` → figure row.
   Function request `{service:"figures",action:"save",id?,data,expectedUpdatedAt?}` → `{figure}`.
+* `deleteAdminFigure({id, expectedUpdatedAt})` → deleted figure ID.
+  Function request `{service:"figures",action:"delete",id,expectedUpdatedAt}` → `{deleted}`.
+  Deletion and its `delete` audit snapshot commit in one transaction; the caller
+  must provide the figure version shown in the catalog.
+  Redeploy `dance-library` with the delete handler before publishing the delete
+  client; older deployments reject this action with HTTP 400 `Invalid action.`
 * `applyFigureRows(rows)` → `{figures}`.
   Function request `{service:"figures",action:"apply",rows:[{id?,data,expectedUpdatedAt?}]}`.
 * `listFigureAudit({cursor?,limit?})` and `listRoleAudit(...)`
@@ -179,6 +187,15 @@ All actions are POST JSON via synchronous authenticated Function executions.
   Figure audit requests also require `service:"figures"`; role requests use
   the separate user-management Function without a service field.
   Pass the returned opaque `nextCursor` unchanged; null means end of history.
+* `listFavoriteStats()` and `listUserUsageStats()` invoke admin-only
+  `favoriteStats` and `usageStats` actions on `dance-library`. Favorite counts
+  are current snapshots from `figure_practice`, not historical totals. User
+  summaries include account name, page views, figure views, clicks, and each
+  user's most visited area, most viewed figure, and most clicked target. They
+  do not return email addresses or private practice notes. Only authenticated
+  admins and superadmins can request these aggregates.
+  Redeploy `dance-library` and publish the frontend together; older function
+  deployments reject these actions and the updated analytics panel needs them.
 
 Administrative API errors include `.outcome`: `rejected` means a definitive
 pre-commit rejection or transaction conflict; `unknown` means the execution may

@@ -12,9 +12,13 @@ function fixture(overrides = {}) {
     async begin() { calls.push(['begin']); return { $id: 'tx-1' } },
     async getFigure(id, tx) { calls.push(['get', id, tx]); return { $id: id, $updatedAt: '2026-01-01T00:00:00Z', ...data, difficulty: 'advanced', privateNote: 'secret' } },
     async writeFigure(id, row, update, tx) { calls.push(['write', id, row, update, tx]); return { $id: id, ...row } },
+    async deleteFigure(id, tx) { calls.push(['delete', id, tx]) },
     async createAudit(row, tx) { calls.push(['audit', row, tx]) },
     async commit(tx) { calls.push(['commit', tx]) },
     async rollback(tx) { calls.push(['rollback', tx]) },
+    async listFavoriteFigureIds() { calls.push(['favorite-stats']); return [] },
+    async listUsageRows() { calls.push(['usage-rows']); return [] },
+    async listUsers() { calls.push(['users']); return [] },
     async listAudit(options) { calls.push(['list', options]); return { entries: [], nextCursor: null } },
     ...overrides,
   }
@@ -69,6 +73,61 @@ test('save commits figure and allowlisted immutable audit in same transaction', 
   assert.equal(f.calls.find(call => call[0] === 'write')[4], 'tx-1')
 })
 
+test('delete requires a fresh version and commits the deletion with an audit snapshot', async () => {
+  const f = fixture()
+  const result = await f.run({ action: 'delete', id: 'existing', expectedUpdatedAt: '2026-01-01T00:00:00Z' })
+  assert.equal(result.status, 200)
+  assert.deepEqual(result.payload, { deleted: 'existing' })
+  const audit = f.calls.find(call => call[0] === 'audit')
+  assert.equal(audit[1].action, 'delete')
+  assert.equal(JSON.parse(audit[1].before).difficulty, 'advanced')
+  assert.equal(audit[1].after, 'null')
+  assert.deepEqual(f.calls.find(call => call[0] === 'delete'), ['delete', 'existing', 'tx-1'])
+  assert.deepEqual(f.calls.at(-1), ['commit', 'tx-1'])
+})
+
+test('stale or unauthorized deletion does not mutate figures', async () => {
+  const stale = fixture()
+  const result = await stale.run({ action: 'delete', id: 'existing', expectedUpdatedAt: '2025-01-01T00:00:00Z' })
+  assert.equal(result.status, 409)
+  assert.equal(stale.calls.some(call => call[0] === 'delete'), false)
+  assert.deepEqual(stale.calls.at(-1), ['rollback', 'tx-1'])
+  const unauthorized = fixture({ async getUser() { return { labels: [] } } })
+  assert.equal((await unauthorized.run({ action: 'delete', id: 'existing', expectedUpdatedAt: '2026-01-01T00:00:00Z' })).status, 403)
+  assert.equal(unauthorized.calls.some(call => call[0] === 'begin'), false)
+})
+
+test('invalid deletion requests are rejected before starting a transaction', async () => {
+  for (const request of [
+    { id: 'existing' },
+    { id: 'existing', expectedUpdatedAt: 'invalid' },
+    { id: '../existing', expectedUpdatedAt: '2026-01-01T00:00:00Z' },
+  ]) {
+    const f = fixture()
+    assert.equal((await f.run({ action: 'delete', ...request })).status, 400)
+    assert.deepEqual(f.calls, [['user', 'trusted']])
+  }
+})
+
+test('delete rolls back on a concurrent edit or failed audit without committing', async () => {
+  for (const overrides of [
+    {
+      async getFigure(id, tx) {
+        return { $id: id, ...data, $updatedAt: tx ? '2026-01-01T00:00:00Z' : '2026-01-02T00:00:00Z' }
+      },
+    },
+    { async createAudit() { throw new Error('Audit unavailable') } },
+  ]) {
+    const f = fixture(overrides)
+    const result = await f.run({ action: 'delete', id: 'existing', expectedUpdatedAt: '2026-01-01T00:00:00Z' })
+    assert.equal(result.status, overrides.getFigure ? 409 : 500)
+    assert.equal(result.payload.outcome, 'rejected')
+    assert.equal(f.calls.some(call => call[0] === 'delete'), true)
+    assert.equal(f.calls.some(call => call[0] === 'commit'), false)
+    assert.deepEqual(f.calls.at(-1), ['rollback', 'tx-1'])
+  }
+})
+
 test('bulk cross-field validation and stale versions roll back before staging writes', async () => {
   for (const row of [
     { id: 'existing', data: { danza: 'bachata' } },
@@ -100,6 +159,57 @@ test('admin audit listing forwards validated cursor pagination', async () => {
   assert.equal((await f.run({ action: 'audit', cursor: 'last-row', limit: 10 })).status, 200)
   assert.deepEqual(f.calls.at(-1), ['list', { cursor: 'last-row', limit: 10 }])
   assert.equal((await f.run({ action: 'audit', limit: 51 })).status, 400)
+})
+
+test('admin usage statistics return named aggregates without emails or private fields', async () => {
+  const f = fixture({
+    async listUsageRows() {
+      return [
+        { userId: 'member', eventType: 'page_view', eventTarget: 'dashboard' },
+        { userId: 'member', eventType: 'page_view', eventTarget: 'dashboard' },
+        { userId: 'member', eventType: 'figure_view', figureId: 'bachata-cucaracha' },
+        { userId: 'member', eventType: 'figure_card_click', eventTarget: 'bachata-cucaracha' },
+        { userId: 'member', eventType: 'dashboard_nav_click', eventTarget: 'catalogo' },
+        { userId: 'member', eventType: 'admin_figure_edit', figureId: 'bachata-cucaracha' },
+      ]
+    },
+    async listUsers() {
+      return [{ userId: 'member', name: 'Ada Lovelace', email: 'private@example.com' }]
+    },
+  })
+  const result = await f.run({ action: 'usageStats' })
+  assert.equal(result.status, 200)
+  assert.deepEqual(result.payload.users, [{
+    userId: 'member',
+    name: 'Ada Lovelace',
+    pageViews: 2,
+    figureViews: 1,
+    clicks: 2,
+    totalActivity: 5,
+    mostVisitedArea: 'dashboard',
+    mostViewedFigureId: 'bachata-cucaracha',
+    mostClickedTarget: 'bachata-cucaracha',
+  }])
+  assert.doesNotMatch(JSON.stringify(result), /private@example.com|notes/)
+})
+
+test('favorite statistics are aggregated and usage data is blocked without fresh admin labels', async () => {
+  const favorites = fixture({
+    async listFavoriteFigureIds() {
+      return [{ figureId: 'figure-1', count: 2 }]
+    },
+  })
+  assert.deepEqual((await favorites.run({ action: 'favoriteStats' })).payload, {
+    favorites: [{ figureId: 'figure-1', count: 2 }],
+  })
+
+  const denied = fixture({
+    async getUser() { return { labels: [] } },
+    async listUsageRows() { throw new Error('Must not read analytics') },
+    async listUsers() { throw new Error('Must not list users') },
+  })
+  assert.equal((await denied.run({ action: 'usageStats' })).status, 403)
+  assert.equal(denied.calls.some(call => call[0] === 'usage-rows' || call[0] === 'users'), false)
 })
 
 test('a concurrent write between validation and staging cannot produce stale audit snapshots', async () => {

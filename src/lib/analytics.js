@@ -97,6 +97,18 @@ export function summarizeViews(events, figures, dances = {}, now = Date.now()) {
   }
 }
 
+export function summarizeFavorites(favorites, figures) {
+  const counts = new Map(favorites.map(({ figureId, count }) => [figureId, count]))
+  return figures
+    .map(figure => ({
+      id: figure.id,
+      nome: figure.nome,
+      favorites: counts.get(figure.id) ?? 0,
+    }))
+    .filter(figure => figure.favorites > 0)
+    .sort((a, b) => b.favorites - a.favorites || a.nome.localeCompare(b.nome, 'it'))
+}
+
 function buildTimeline(events, days, now, accept) {
   const matchingEvents = events.filter(accept)
   const end = new Date(now)

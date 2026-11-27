@@ -13,9 +13,10 @@ const props = defineProps({
   error: { type: String, default: '' },
   admin: Boolean,
   userId: { type: String, default: '' },
+  deletingId: { type: String, default: '' },
 })
 
-defineEmits(['edit', 'create', 'retry'])
+const emit = defineEmits(['edit', 'create', 'retry', 'delete'])
 
 const videoFilter = defineModel('videoFilter', { type: String, default: 'all' })
 const search = shallowRef('')
@@ -64,6 +65,12 @@ function trackFigureOpen(figureId) {
     eventTarget: figureId,
     userId: props.userId,
   })
+}
+
+function confirmDelete(figure) {
+  if (window.confirm(`Eliminare definitivamente ${figure.nome}? Questa operazione non può essere annullata.`)) {
+    emit('delete', figure)
+  }
 }
 </script>
 
@@ -188,6 +195,10 @@ function trackFigureOpen(figureId) {
             <button v-if="admin" type="button" class="row-action" :aria-label="`Modifica ${figure.nome}`"
               @click="$emit('edit', figure)">
               <StudioIcon name="edit" />
+            </button>
+            <button v-if="admin" type="button" class="row-action" :aria-label="`Elimina ${figure.nome}`"
+              :disabled="deletingId === (figure.id || figure.$id)" @click="confirmDelete(figure)">
+              <StudioIcon name="trash" />
             </button>
             <RouterLink v-else :to="{ name: 'figura', params: { figura: figure.id } }" class="row-action"
               :aria-label="`Apri ${figure.nome}`">
