@@ -76,7 +76,7 @@ const sectionItems = computed(() => {
   if (practiceEnabled) items.push({ id: 'pratica', label: 'La mia pratica', icon: 'music' })
   if (catalogEnabled) items.push({ id: 'catalogo', label: isAdmin.value ? 'Catalogo' : 'Esplora figure', icon: 'library' })
   if (isAdmin.value && adminOperationsEnabled) items.push({ id: 'operazioni', label: 'Import e audit', icon: 'edit' })
-  if (isAdmin.value && analyticsEnabled) items.push({ id: 'visualizzazioni', label: 'Analytics', icon: 'video' })
+  if (isAdmin.value && analyticsEnabled) items.push({ id: 'visualizzazioni', label: 'Statistiche', icon: 'video' })
   if (isSuperAdmin.value && userRolesEnabled) items.push({ id: 'utenti', label: 'Utenti', icon: 'user' })
   return items
 })
