@@ -121,7 +121,12 @@ onBeforeUnmount(() => animationContext?.revert())
       <div class="player" :class="{ 'player-placeholder': !videoId && !currentFigure.videoFileId }">
         <ProtectedMedia v-if="currentFigure.videoFileId" :file-id="currentFigure.videoFileId" kind="video"
           :title="`Video: ${currentFigure.nome}`" />
-        <VideoPlayer v-else-if="videoId" :key="videoId" :youtube-id="videoId" :title="`Video: ${currentFigure.nome}`" />
+        <div v-else-if="videoId" class="youtube-frame-wrap">
+          <iframe :src="`https://www.youtube-nocookie.com/embed/${videoId}?hl=it&cc_lang_pref=it&rel=0&playsinline=1`"
+            :title="`Video: ${currentFigure.nome}`"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin" allowfullscreen />
+        </div>
         <div v-else class="placeholder-body">
           <p class="script">Video in arrivo</p>
           <p class="placeholder-note">Per ora puoi provare la figura con le altre {{ dance.nome }}.</p>
@@ -231,6 +236,24 @@ onBeforeUnmount(() => animationContext?.revert())
   place-items: center;
   padding: 1rem;
   background: var(--ink-2);
+}
+
+.youtube-frame-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #000;
+}
+
+.youtube-frame-wrap iframe {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 .placeholder-body {

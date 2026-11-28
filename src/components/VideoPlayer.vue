@@ -7,7 +7,6 @@ registerI18n('en', {
   dancePlayer: {
     heading: 'Step by step', hint: 'Your rhythm, your practice', loading: 'Loading...',
     retry: 'Retry video', mediaError: 'This video could not be played. Retry or check the video format.',
-    youtubeError: 'This video could not be played. Retry or open it on YouTube.',
     rateError: 'Playback speed could not be changed. Please retry.',
     fullscreenError: 'Fullscreen could not be opened. Please retry.',
     reloadError: 'This video could not be reloaded. Please retry.',
@@ -17,7 +16,6 @@ registerI18n('it', {
   dancePlayer: {
     heading: 'Passo dopo passo', hint: 'Il tuo ritmo, la tua pratica', loading: 'Caricamento...',
     retry: 'Riprova video', mediaError: 'Impossibile riprodurre il video. Riprova o verifica il formato del file.',
-    youtubeError: 'Impossibile riprodurre il video. Riprova o aprilo su YouTube.',
     rateError: 'Impossibile cambiare velocità. Riprova.',
     fullscreenError: 'Impossibile aprire lo schermo intero. Riprova.',
     reloadError: 'Impossibile ricaricare il video. Riprova.',
@@ -28,7 +26,6 @@ registerI18n('it', {
 <script setup>
 import '@videojs/html/video/player'
 import '@videojs/html/ui/container'
-import '@videojs/html/media/youtube-video'
 import '@videojs/html/ui/play-button'
 import '@videojs/html/ui/seek-button'
 import '@videojs/html/ui/mute-button'
@@ -46,9 +43,8 @@ import '@videojs/html/ui/status-announcer'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId } from 'vue'
 import StudioIcon from './StudioIcon.vue'
 
-const props = defineProps({
-  source: { type: String, default: '' },
-  youtubeId: { type: String, default: '' },
+defineProps({
+  source: { type: String, required: true },
   title: { type: String, required: true },
 })
 
@@ -61,12 +57,7 @@ const aspectRatio = ref('16 / 9')
 const windowFullscreen = ref(false)
 const fullscreen = computed(() => state.value?.isFullscreen || windowFullscreen.value)
 const id = useId()
-const youtubeSource = computed(() => ({
-  src: `https://www.youtube-nocookie.com/embed/${props.youtubeId}`,
-  engine: { youtube: { hl: 'it', cc_lang_pref: 'it', rel: 0, referrerPolicy: 'strict-origin-when-cross-origin' } },
-}))
 let unsubscribe = null
-let readyTimer = null
 let previousOverflow = ''
 
 function mediaReady(event) {
@@ -77,8 +68,7 @@ function mediaReady(event) {
 }
 
 function mediaError() {
-  clearTimeout(readyTimer)
-  error.value = props.youtubeId ? 'dancePlayer.youtubeError' : 'dancePlayer.mediaError'
+  error.value = 'dancePlayer.mediaError'
 }
 
 async function perform(action, message) {
@@ -91,19 +81,10 @@ async function perform(action, message) {
   }
 }
 
-function startReadyTimer() {
-  clearTimeout(readyTimer)
-  if (!props.youtubeId) return
-  readyTimer = setTimeout(() => {
-    if (!player.value.store.duration && !player.value.store.error) mediaError()
-  }, 20000)
-}
-
 function retry() {
   return perform((store) => {
     store.dismissError()
     media.value.load()
-    startReadyTimer()
   }, 'dancePlayer.reloadError')
 }
 
@@ -154,11 +135,9 @@ onMounted(() => {
   sync()
   unsubscribe = store.subscribe(sync)
   document.addEventListener('keydown', onEscape)
-  startReadyTimer()
 })
 
 onBeforeUnmount(() => {
-  clearTimeout(readyTimer)
   unsubscribe?.()
   document.removeEventListener('keydown', onEscape)
   closeWindowFullscreen()
@@ -167,100 +146,98 @@ onBeforeUnmount(() => {
 
 <template>
   <media-i18n>
-  <video-player ref="player" class="video-player" default-playback-rates="0.25 0.5 0.75 1 1.25 1.5 1.75 2">
-    <media-container ref="surface" class="player-surface" :class="{ 'window-fullscreen': windowFullscreen }"
-      :aria-label="title" @keydown="onKeydown">
-      <div class="player-heading">
-        <media-text token="dancePlayer.heading">Step by step</media-text>
-        <media-text class="player-hint" token="dancePlayer.hint">Your rhythm, your practice</media-text>
-      </div>
-      <div class="video-stage" :style="{ aspectRatio }">
-        <youtube-video v-if="youtubeId" ref="media" :source.prop="youtubeSource" :aria-label="title" playsinline
-          @loadedmetadata="mediaReady" @error="mediaError" />
-        <video v-else ref="media" :src="source" :aria-label="title" playsinline preload="metadata"
-          @loadedmetadata="mediaReady" @error="mediaError" />
-        <media-play-button v-if="state?.paused" class="big-play">
-          <StudioIcon name="play" />
-        </media-play-button>
-        <span v-if="state?.waiting && !error" class="loading-note" role="status">
-          <media-text token="dancePlayer.loading">Loading...</media-text>
-        </span>
-      </div>
-      <div class="player-controls">
-        <div class="timeline">
-          <media-time-slider class="slider" :disabled="!state?.duration" :step.prop="5">
-            <media-slider-track>
-              <media-slider-buffer />
-              <media-slider-fill />
-            </media-slider-track>
-            <media-slider-thumb />
-          </media-time-slider>
-          <media-time-group class="time">
-            <media-time type="current" />
-            <media-time-separator> / </media-time-separator>
-            <media-time type="duration" />
-          </media-time-group>
+    <video-player ref="player" class="video-player" default-playback-rates="0.25 0.5 0.75 1 1.25 1.5 1.75 2">
+      <media-container ref="surface" class="player-surface" :class="{ 'window-fullscreen': windowFullscreen }"
+        :aria-label="title" @keydown="onKeydown">
+        <div class="player-heading">
+          <media-text token="dancePlayer.heading">Step by step</media-text>
+          <media-text class="player-hint" token="dancePlayer.hint">Your rhythm, your practice</media-text>
         </div>
-        <div class="toolbar">
-          <media-play-button class="control play-control">
-            <span class="icon-stack">
-              <StudioIcon class="play-icon" name="play" />
-              <StudioIcon class="pause-icon" name="pause" />
-            </span>
+        <div class="video-stage" :style="{ aspectRatio }">
+          <video ref="media" :src="source" :aria-label="title" playsinline preload="metadata"
+            @loadedmetadata="mediaReady" @error="mediaError" />
+          <media-play-button v-if="state?.paused" class="big-play">
+            <StudioIcon name="play" />
           </media-play-button>
-          <media-seek-button class="control skip" :seconds.prop="-5" :disabled="!state?.duration">
-            <StudioIcon name="rewind" /><span aria-hidden="true">5s</span>
-          </media-seek-button>
-          <media-seek-button class="control skip" :seconds.prop="5" :disabled="!state?.duration">
-            <StudioIcon name="forward" /><span aria-hidden="true">5s</span>
-          </media-seek-button>
-          <div class="volume">
-            <media-mute-button class="control">
-              <span class="icon-stack">
-                <StudioIcon class="volume-icon" name="volume" />
-                <StudioIcon class="muted-icon" name="muted" />
-              </span>
-            </media-mute-button>
-            <media-volume-slider class="slider volume-slider">
-              <media-slider-track><media-slider-fill /></media-slider-track>
+          <span v-if="state?.waiting && !error" class="loading-note" role="status">
+            <media-text token="dancePlayer.loading">Loading...</media-text>
+          </span>
+        </div>
+        <div class="player-controls">
+          <div class="timeline">
+            <media-time-slider class="slider" :disabled="!state?.duration" :step.prop="5">
+              <media-slider-track>
+                <media-slider-buffer />
+                <media-slider-fill />
+              </media-slider-track>
               <media-slider-thumb />
-            </media-volume-slider>
+            </media-time-slider>
+            <media-time-group class="time">
+              <media-time type="current" />
+              <media-time-separator> / </media-time-separator>
+              <media-time type="duration" />
+            </media-time-group>
           </div>
-          <label class="speed">
-            <media-text :id="`${id}-speed`" token="menu.speed" class="speed-label">Speed</media-text>
-            <select :aria-labelledby="`${id}-speed`" :value="state?.playbackRate || 1"
-              :disabled="state?.playbackRateAvailability !== 'available'"
-              @change="perform(store => store.setPlaybackRate(Number($event.target.value)), 'dancePlayer.rateError')">
-              <option v-for="rate in state?.playbackRates || [1]" :key="rate" :value="rate">{{ rate }}x</option>
-            </select>
-          </label>
-          <button type="button" class="control" :aria-labelledby="`${id}-fullscreen`"
-            :aria-pressed="Boolean(fullscreen)" @click="toggleFullscreen">
-            <media-text :id="`${id}-fullscreen`" class="visually-hidden"
-              :token="fullscreen ? 'fullscreen.exit' : 'fullscreen.enter'">Fullscreen</media-text>
-            <span class="icon-stack" :data-fullscreen="fullscreen ? '' : undefined">
-              <StudioIcon class="expand-icon" name="fullscreen" />
-              <StudioIcon class="minimize-icon" name="minimize" />
-            </span>
+          <div class="toolbar">
+            <media-play-button class="control play-control">
+              <span class="icon-stack">
+                <StudioIcon class="play-icon" name="play" />
+                <StudioIcon class="pause-icon" name="pause" />
+              </span>
+            </media-play-button>
+            <media-seek-button class="control skip" :seconds.prop="-5" :disabled="!state?.duration">
+              <StudioIcon name="rewind" /><span aria-hidden="true">5s</span>
+            </media-seek-button>
+            <media-seek-button class="control skip" :seconds.prop="5" :disabled="!state?.duration">
+              <StudioIcon name="forward" /><span aria-hidden="true">5s</span>
+            </media-seek-button>
+            <div class="volume">
+              <media-mute-button class="control">
+                <span class="icon-stack">
+                  <StudioIcon class="volume-icon" name="volume" />
+                  <StudioIcon class="muted-icon" name="muted" />
+                </span>
+              </media-mute-button>
+              <media-volume-slider class="slider volume-slider">
+                <media-slider-track><media-slider-fill /></media-slider-track>
+                <media-slider-thumb />
+              </media-volume-slider>
+            </div>
+            <label class="speed">
+              <media-text :id="`${id}-speed`" token="menu.speed" class="speed-label">Speed</media-text>
+              <select :aria-labelledby="`${id}-speed`" :value="state?.playbackRate || 1"
+                :disabled="state?.playbackRateAvailability !== 'available'"
+                @change="perform(store => store.setPlaybackRate(Number($event.target.value)), 'dancePlayer.rateError')">
+                <option v-for="rate in state?.playbackRates || [1]" :key="rate" :value="rate">{{ rate }}x</option>
+              </select>
+            </label>
+            <button type="button" class="control" :aria-labelledby="`${id}-fullscreen`"
+              :aria-pressed="Boolean(fullscreen)" @click="toggleFullscreen">
+              <media-text :id="`${id}-fullscreen`" class="visually-hidden"
+                :token="fullscreen ? 'fullscreen.exit' : 'fullscreen.enter'">Fullscreen</media-text>
+              <span class="icon-stack" :data-fullscreen="fullscreen ? '' : undefined">
+                <StudioIcon class="expand-icon" name="fullscreen" />
+                <StudioIcon class="minimize-icon" name="minimize" />
+              </span>
+            </button>
+          </div>
+        </div>
+        <div v-if="error" class="player-error" role="alert">
+          <p><media-text :token="error">This video could not be played. Please retry.</media-text></p>
+          <button type="button" class="btn" @click="retry">
+            <media-text token="dancePlayer.retry">Retry video</media-text>
           </button>
         </div>
-      </div>
-      <div v-if="error" class="player-error" role="alert">
-        <p><media-text :token="error">This video could not be played. Please retry.</media-text></p>
-        <button type="button" class="btn" @click="retry">
-          <media-text token="dancePlayer.retry">Retry video</media-text>
-        </button>
-      </div>
-      <media-hotkey keys="Space" action="togglePaused" />
-      <media-hotkey keys="k" action="togglePaused" />
-      <media-hotkey keys="m" action="toggleMuted" />
-      <media-hotkey keys="ArrowLeft" action="seekStep" :value.prop="-5" />
-      <media-hotkey keys="j" action="seekStep" :value.prop="-5" />
-      <media-hotkey keys="ArrowRight" action="seekStep" :value.prop="5" />
-      <media-hotkey keys="l" action="seekStep" :value.prop="5" />
-      <media-status-announcer class="visually-hidden" />
-    </media-container>
-  </video-player>
+        <media-hotkey keys="Space" action="togglePaused" />
+        <media-hotkey keys="k" action="togglePaused" />
+        <media-hotkey keys="m" action="toggleMuted" />
+        <media-hotkey keys="ArrowLeft" action="seekStep" :value.prop="-5" />
+        <media-hotkey keys="j" action="seekStep" :value.prop="-5" />
+        <media-hotkey keys="ArrowRight" action="seekStep" :value.prop="5" />
+        <media-hotkey keys="l" action="seekStep" :value.prop="5" />
+        <media-status-announcer class="visually-hidden" />
+      </media-container>
+    </video-player>
   </media-i18n>
 </template>
 
@@ -321,8 +298,7 @@ onBeforeUnmount(() => {
   background: #000;
 }
 
-video,
-youtube-video {
+video {
   position: absolute;
   inset: 0;
   display: block;
@@ -604,6 +580,7 @@ media-mute-button[data-muted] .muted-icon,
 }
 
 @media (hover: hover) and (pointer: fine) {
+
   .control:hover:not([data-disabled]),
   .speed select:hover {
     background: var(--player-raised);
@@ -620,6 +597,7 @@ media-mute-button[data-muted] .muted-icon,
   .slider media-slider-track {
     background: GrayText;
   }
+
   .slider media-slider-fill,
   .slider media-slider-thumb {
     background: Highlight;
@@ -627,6 +605,7 @@ media-mute-button[data-muted] .muted-icon,
 }
 
 @container (max-width: 600px) {
+
   .player-hint,
   .volume-slider,
   .speed-label {

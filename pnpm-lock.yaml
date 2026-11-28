@@ -10,9 +10,6 @@ importers:
     dependencies:
       '@videojs/html':
         specifier: ^10.7.0
-        version: 10.7.0(@videojs/youtube-video@10.7.0)
-      '@videojs/youtube-video':
-        specifier: ^10.7.0
         version: 10.7.0
       appwrite:
         specifier: ^29.3.1
@@ -3397,7 +3394,7 @@ snapshots:
       '@lit/context': 1.1.6
       '@videojs/utils': 10.7.0
 
-  '@videojs/html@10.7.0(@videojs/youtube-video@10.7.0)':
+  '@videojs/html@10.7.0':
     dependencies:
       '@videojs/core': 10.7.0(@videojs/element@10.7.0)
       '@videojs/element': 10.7.0
@@ -3406,8 +3403,6 @@ snapshots:
       '@videojs/spf': 10.7.0
       '@videojs/store': 10.7.0(@videojs/element@10.7.0)
       '@videojs/utils': 10.7.0
-    optionalDependencies:
-      '@videojs/youtube-video': 10.7.0
     transitivePeerDependencies:
       - react
 
@@ -3436,11 +3431,6 @@ snapshots:
       '@videojs/element': 10.7.0
 
   '@videojs/utils@10.7.0': {}
-
-  '@videojs/youtube-video@10.7.0':
-    dependencies:
-      '@videojs/media': 10.7.0
-      '@videojs/utils': 10.7.0
 
   '@vitejs/plugin-vue@6.0.11(vite@8.3.8(@types/node@26.6.6)(terser@5.51.2))(vue@3.5.45)':
     dependencies:

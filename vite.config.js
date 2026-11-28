@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 const playerElements = new Set([
-  'video-player', 'media-container', 'youtube-video', 'media-i18n', 'media-text',
+  'video-player', 'media-container', 'media-i18n', 'media-text',
   'media-play-button', 'media-seek-button', 'media-mute-button', 'media-time-slider',
   'media-volume-slider', 'media-slider-track', 'media-slider-buffer', 'media-slider-fill',
   'media-slider-thumb', 'media-time-group', 'media-time', 'media-time-separator',
