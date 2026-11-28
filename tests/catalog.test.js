@@ -32,14 +32,15 @@ test('structured aliases and descriptions are accent-insensitive and case-insens
 
 test('difficulty video dance and style filters compose with sorting without mutating input', () => {
   const entries = [
-    { id: 'b', nome: 'Figura 10', danza: 'salsa', stili: ['cubana'], difficulty: 'beginner', youtubeId: 'video', $updatedAt: '2026-01-01' },
-    { id: 'a', nome: 'Figura 2', danza: 'salsa', stili: ['cubana'], difficulty: 'beginner', videoFileId: 'file', $updatedAt: '2026-02-01' },
+    { id: 'b', nome: 'Figura 10', danza: 'salsa', stili: ['cubana'], difficulty: 'beginner', youtubeId: 'video', $createdAt: '2026-01-01', $updatedAt: '2026-03-01' },
+    { id: 'a', nome: 'Figura 2', danza: 'salsa', stili: ['cubana'], difficulty: 'beginner', videoFileId: 'file', $createdAt: '2026-02-01', $updatedAt: '2026-02-01' },
     { id: 'c', nome: 'Advanced', danza: 'salsa', stili: ['cubana'], difficulty: 'advanced' },
     { id: 'd', nome: 'Legacy', danza: 'bachata', stili: [] },
   ]
   const result = filterCatalog(entries, { dance: 'salsa', video: 'ready', style: 'cubana', difficulty: 'beginner', sort: 'name' })
   assert.deepEqual(result.map(item => item.id), ['a', 'b'])
-  assert.deepEqual(filterCatalog(entries, { sort: 'recent' }).map(item => item.id), ['a', 'b', 'c', 'd'])
+  assert.deepEqual(filterCatalog(entries, { sort: 'newest' }).map(item => item.id), ['a', 'b', 'c', 'd'])
+  assert.deepEqual(filterCatalog(entries, { sort: 'recent' }).map(item => item.id), ['b', 'a', 'c', 'd'])
   assert.deepEqual(filterCatalog(entries, { sort: 'difficulty' }).map(item => item.id), ['a', 'b', 'c', 'd'])
   assert.deepEqual(filterCatalog(entries, { difficulty: 'unset' }).map(item => item.id), ['d'])
   assert.deepEqual(entries.map(item => item.id), ['b', 'a', 'c', 'd'])

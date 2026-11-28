@@ -18,8 +18,10 @@ export function filterCatalog(figures, { search = '', dance = '', video = 'all',
       && (video === 'all' || (video === 'ready' ? hasVideo : !hasVideo))
   })
   const byName = (a, b) => a.nome.localeCompare(b.nome, 'it', { numeric: true, sensitivity: 'base' }) || a.id.localeCompare(b.id)
+  const byCreatedAt = (a, b) => (b.$createdAt || '').localeCompare(a.$createdAt || '') || byName(a, b)
   if (sort === 'name') results.sort(byName)
   if (sort === 'difficulty') results.sort((a, b) => (difficultyRank[a.difficulty] || 4) - (difficultyRank[b.difficulty] || 4) || byName(a, b))
+  if (sort === 'newest') results.sort(byCreatedAt)
   if (sort === 'recent') results.sort((a, b) => (b.$updatedAt || '').localeCompare(a.$updatedAt || '') || byName(a, b))
   return results
 }

@@ -22,8 +22,8 @@ const activeStyle = computed(() => (typeof route.query.stile === 'string' ? rout
 const searchText = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const difficulty = computed(() => typeof route.query.difficolta === 'string' ? route.query.difficolta : '')
 const videoFilter = computed(() => typeof route.query.video === 'string' ? route.query.video : 'all')
-const sort = computed(() => typeof route.query.ordine === 'string' ? route.query.ordine : 'catalog')
-const hasFilters = computed(() => Boolean(activeStyle.value || searchText.value.trim() || difficulty.value || videoFilter.value !== 'all' || sort.value !== 'catalog'))
+const sort = computed(() => typeof route.query.ordine === 'string' ? route.query.ordine : 'newest')
+const hasFilters = computed(() => Boolean(activeStyle.value || searchText.value.trim() || difficulty.value || videoFilter.value !== 'all' || sort.value !== 'newest'))
 
 const filteredFigures = computed(() => filterCatalog(danceFigures.value, {
   search: searchText.value, style: activeStyle.value, difficulty: difficulty.value, video: videoFilter.value, sort: sort.value,
@@ -152,7 +152,9 @@ onBeforeUnmount(() => {
       </div>
 
       <details class="advanced-filters">
-        <summary><StudioIcon name="filters" />Filtri e ordine</summary>
+        <summary>
+          <StudioIcon name="filters" />Filtri e ordine
+        </summary>
         <div class="extra-filters">
           <label>Difficoltà
             <select :value="difficulty" @change="updateQuery({ difficolta: $event.target.value })">
@@ -170,7 +172,7 @@ onBeforeUnmount(() => {
           </label>
           <label>Ordina
             <select :value="sort" @change="updateQuery({ ordine: $event.target.value })">
-              <option value="catalog">Catalogo</option>
+              <option value="newest">Più recenti</option>
               <option value="name">Nome A–Z</option>
               <option value="difficulty">Difficoltà crescente</option>
               <option value="recent">Aggiornate di recente</option>
@@ -227,13 +229,53 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.advanced-filters { margin-block: 0.75rem; }
-.advanced-filters summary { display: flex; align-items: center; gap: 0.5rem; width: fit-content; min-height: 44px; font-weight: 600; }
-.advanced-filters summary::after { content: '+'; margin-left: 0.5rem; }
-.advanced-filters[open] summary::after { content: '-'; }
-.extra-filters { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-block: 1rem; }
-.extra-filters label { flex: 1 1 9rem; display: grid; gap: 0.4rem; }
-.extra-filters select { width: 100%; min-width: 0; min-height: 3rem; padding: 0.6rem; font: inherit; background: var(--ink-2); color: var(--text); border: 1px solid var(--input-line); border-radius: 0.6rem; }
+.advanced-filters {
+  margin-block: 0.75rem;
+}
+
+.advanced-filters summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  min-height: 44px;
+  font-weight: 600;
+}
+
+.advanced-filters summary::after {
+  content: '+';
+  margin-left: 0.5rem;
+}
+
+.advanced-filters[open] summary::after {
+  content: '-';
+}
+
+.extra-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+
+.extra-filters label {
+  flex: 1 1 9rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.extra-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  padding: 0.6rem;
+  font: inherit;
+  background: var(--ink-2);
+  color: var(--text);
+  border: 1px solid var(--input-line);
+  border-radius: 0.6rem;
+}
+
 .danza {
   padding: clamp(1.5rem, 5vw, 3rem) 0 1rem;
 }
@@ -285,7 +327,7 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
-.search > .studio-icon {
+.search>.studio-icon {
   position: absolute;
   left: 1rem;
   width: 1.1rem;
@@ -350,7 +392,7 @@ onBeforeUnmount(() => {
   border-color: var(--accent-text);
 }
 
-.figura-card > .tag {
+.figura-card>.tag {
   align-self: flex-start;
 }
 
