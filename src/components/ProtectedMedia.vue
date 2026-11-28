@@ -2,6 +2,7 @@
 import { shallowRef, watch } from 'vue'
 import { currentUser } from '../lib/auth.js'
 import { loadMedia } from '../lib/figures.js'
+import VideoPlayer from './VideoPlayer.vue'
 
 const props = defineProps({
   fileId: { type: String, required: true },
@@ -54,8 +55,7 @@ watch(
         Riprova
       </button>
     </div>
-    <video v-if="source && kind === 'video'" :src="source" :aria-label="title" controls playsinline preload="metadata"
-      @error="error = 'Il browser non riesce a riprodurre questo video. Prova un file MP4 o WebM.'" />
+    <VideoPlayer v-if="source && kind === 'video'" :key="source" :source="source" :title="title" />
     <img v-else-if="source" :src="source" :alt="title" @error="error = 'Impossibile visualizzare questa immagine.'" />
   </div>
 </template>
@@ -65,7 +65,6 @@ watch(
   width: 100%;
 }
 
-video,
 img {
   display: block;
   width: 100%;

@@ -10,6 +10,7 @@ import { isOnline } from '../lib/online.js'
 import { canAnimate } from '../lib/motion.js'
 import ProtectedMedia from '../components/ProtectedMedia.vue'
 import FigurePractice from '../components/FigurePractice.vue'
+import VideoPlayer from '../components/VideoPlayer.vue'
 
 const practiceEnabled = isFeatureEnabled('practice')
 
@@ -36,17 +37,7 @@ const nextFigure = computed(() =>
 )
 
 const videoId = computed(() => currentFigure.value?.youtubeId ?? null)
-const videoUrl = computed(() =>
-  videoId.value
-    ? `https://www.youtube-nocookie.com/embed/${videoId.value}?hl=it&cc_lang_pref=it&rel=0&modestbranding=1&playsinline=1`
-    : null,
-)
 const youtubeLink = computed(() => (videoId.value ? `https://www.youtube.com/watch?v=${videoId.value}` : null))
-
-const videoLoaded = ref(false)
-watch(videoId, () => {
-  videoLoaded.value = false
-})
 
 const root = ref(null)
 let animationContext = null
@@ -127,24 +118,17 @@ onBeforeUnmount(() => animationContext?.revert())
           'Avanzata'
       }[currentFigure.difficulty] }}</p>
 
-      <div class="player" :class="{ 'player-placeholder': !videoUrl && !currentFigure.videoFileId }">
+      <div class="player" :class="{ 'player-placeholder': !videoId && !currentFigure.videoFileId }">
         <ProtectedMedia v-if="currentFigure.videoFileId" :file-id="currentFigure.videoFileId" kind="video"
           :title="`Video: ${currentFigure.nome}`" />
-        <template v-else-if="videoUrl">
-          <div v-if="!videoLoaded" class="skeleton player-loading" role="status">
-            <span class="visually-hidden">Caricamento del video…</span>
-          </div>
-          <iframe :key="videoUrl" :src="videoUrl" :title="`Video: ${currentFigure.nome}`"
-            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerpolicy="strict-origin-when-cross-origin" allowfullscreen @load="videoLoaded = true" />
-        </template>
+        <VideoPlayer v-else-if="videoId" :key="videoId" :youtube-id="videoId" :title="`Video: ${currentFigure.nome}`" />
         <div v-else class="placeholder-body">
           <p class="script">Video in arrivo</p>
           <p class="placeholder-note">Per ora puoi provare la figura con le altre {{ dance.nome }}.</p>
         </div>
       </div>
 
-      <p v-if="videoUrl && !isOnline" class="video-note" role="status">
+      <p v-if="videoId && !currentFigure.videoFileId && !isOnline" class="video-note" role="status">
         Sei offline: il video non si carica. Riprova quando torni online.
       </p>
       <a v-else-if="youtubeLink && !currentFigure.videoFileId" :href="youtubeLink" class="video-note yt" target="_blank"
@@ -235,29 +219,14 @@ onBeforeUnmount(() => animationContext?.revert())
 
 .player {
   position: relative;
-  aspect-ratio: 16 / 9;
-  border-radius: 1rem;
-  overflow: hidden;
+  border-radius: 1.25rem;
   background: #000;
   box-shadow: var(--shadow);
   border: 1px solid var(--line);
 }
 
-.player iframe {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-}
-
-.player-loading {
-  position: absolute;
-  inset: 0;
-  border-radius: 0;
-}
-
 .player-placeholder {
+  aspect-ratio: 16 / 9;
   display: grid;
   place-items: center;
   padding: 1rem;

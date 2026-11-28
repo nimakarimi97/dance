@@ -2,6 +2,14 @@
 defineProps({ name: { type: String, required: true } })
 
 const paths = {
+  play: 'M7 4l14 8-14 8z',
+  pause: 'M8 4v16 M16 4v16',
+  rewind: 'M11 5v14L2 12z M22 5v14l-9-7z',
+  forward: 'M2 5v14l9-7z M13 5v14l9-7z',
+  volume: 'M3 9h4l5-4v14l-5-4H3z M16 8a6 6 0 0 1 0 8 M19 5a10 10 0 0 1 0 14',
+  muted: 'M3 9h4l5-4v14l-5-4H3z M16 9l6 6 M22 9l-6 6',
+  fullscreen: 'M9 3H3v6 M15 3h6v6 M3 15v6h6 M21 15v6h-6',
+  minimize: 'M3 9h6V3 M15 3v6h6 M9 21v-6H3 M21 15h-6v6',
   home: 'M3 10l9-7 9 7v11h-6v-7H9v7H3z',
   menu: 'M4 6h16 M4 12h16 M4 18h16',
   dance: 'M9 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0 M19 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0 M7 9l-3 3-2-2 M7 9l5 3 5-3 M17 9l3 3 2-2 M7 9v6l-3 6 M7 15l4 6 M17 9v6l-4 6 M17 15l3 6',

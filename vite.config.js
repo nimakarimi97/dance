@@ -2,10 +2,24 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const playerElements = new Set([
+  'video-player', 'media-container', 'youtube-video', 'media-i18n', 'media-text',
+  'media-play-button', 'media-seek-button', 'media-mute-button', 'media-time-slider',
+  'media-volume-slider', 'media-slider-track', 'media-slider-buffer', 'media-slider-fill',
+  'media-slider-thumb', 'media-time-group', 'media-time', 'media-time-separator',
+  'media-hotkey', 'media-status-announcer',
+])
+
 export default defineConfig({
   base: '/',
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => playerElements.has(tag),
+        },
+      },
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['pwa-192.png', 'pwa-512.png', 'pwa-maskable-512.png', 'apple-touch-icon.png'],

@@ -50,6 +50,8 @@ Con un account con label `admin`, usa **Nuova figura** oppure il pulsante di mod
 
 I video Appwrite hanno la precedenza su YouTube. I caricamenti falliti prima del salvataggio della riga vengono rimossi; sostituire un file mantiene quello precedente nel bucket, senza eliminazioni distruttive automatiche.
 
+Il player delle figure usa Video.js 10 (`@videojs/html` e `@videojs/youtube-video`) con controlli personalizzati in italiano: riproduzione/pausa, salti di 5 secondi, posizione con indicatore del buffer, audio, selettore velocità da 0,25x a 2x e schermo intero. Le etichette e gli annunci per screen reader usano le traduzioni Video.js. Con il focus nel player: Spazio/K riproduce o mette in pausa, M cambia l'audio, frecce sinistra/destra o J/L saltano di 5 secondi, F cambia lo schermo intero. Su mobile i controlli restano sotto il video, si adattano alla larghezza del player e i filmati verticali sono mostrati interamente, senza ritagli. Quando il browser non supporta lo schermo intero del contenitore, il player usa tutta la finestra per mantenere i controlli personalizzati.
+
 I media privati vengono caricati con richieste SDK autenticate e visualizzati con URL Blob temporanei, revocati quando si lascia la pagina o si esce dall'account. Questo funziona anche con cookie di terze parti bloccati, ma richiede il download completo del file prima della riproduzione. Un video YouTube rimane soggetto alla visibilità impostata su YouTube: per media realmente privati usa il bucket Appwrite. I file MOV dipendono dai codec supportati dal browser; MP4/WebM sono preferibili.
 
 ## Deploy automatico (GitHub Actions)
