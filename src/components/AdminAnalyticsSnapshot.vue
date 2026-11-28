@@ -59,7 +59,7 @@ onMounted(load)
         <p>Visite alle figure, click e operazioni amministrative.</p>
       </div>
       <button type="button" class="snapshot-link" @click="emit('open-analytics')">
-        Apri analytics
+        Apri statistiche
         <span aria-hidden="true">↗</span>
       </button>
     </header>
