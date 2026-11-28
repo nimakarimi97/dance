@@ -28,13 +28,22 @@ const listEditor = useTemplateRef('list-editor')
 defineExpose({ canLeave: () => !editing.value || listEditor.value?.canClose() !== false })
 const progressLabels = { learning: 'Da imparare', practicing: 'In pratica', mastered: 'Padroneggiata' }
 const visible = computed(() => {
-  const ids = filter.value.startsWith('list:')
+  const isCustomList = filter.value.startsWith('list:')
+  const entriesById = new Map(records.value.map(record => [record.figureId, record]))
+  const matchesFilter = record => filter.value === 'favorites' ? record.favorite : record.progress === filter.value
+  const recordIds = isCustomList
     ? lists.value.find(list => list.$id === filter.value.slice(5))?.figureIds || []
-    : records.value.filter(record => filter.value === 'favorites' ? record.favorite : record.progress === filter.value).map(record => record.figureId)
+    : records.value.filter(matchesFilter).map(record => record.figureId)
+  const recordIdSet = new Set(recordIds)
+  const catalogIds = new Set(props.figures.map(figure => figure.id))
+  const ids = isCustomList ? recordIds : [
+    ...props.figures.filter(figure => recordIdSet.has(figure.id)).map(figure => figure.id),
+    ...recordIds.filter(id => !catalogIds.has(id)),
+  ]
   return ids.map(id => ({
     id, figure: props.figures.find(figure => figure.id === id),
-    progress: records.value.find(record => record.figureId === id)?.progress,
-    notes: records.value.find(record => record.figureId === id)?.notes,
+    progress: entriesById.get(id)?.progress,
+    notes: entriesById.get(id)?.notes,
   }))
 })
 
@@ -111,7 +120,8 @@ async function remove(list) {
         <select v-model="filter">
           <option v-if="favoritesEnabled" value="favorites">Preferiti</option>
           <option v-for="(label, state) in progressLabels" :key="state" :value="state">{{ label }}</option>
-          <option v-for="list in lists" :key="list.$id" :value="`list:${list.$id}`">Lista · {{ list.name }}</option>
+          <option v-for="list in lists" :key="list.$id" :value="`list:${list.$id}`">Lista · {{ list.name }}
+          </option>
         </select>
       </label>
       <p v-if="catalogLoading" role="status">Verifica disponibilità delle figure…</p>

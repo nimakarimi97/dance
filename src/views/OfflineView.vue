@@ -1,16 +1,18 @@
 <script setup>
-import { onBeforeUnmount, onMounted, shallowRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, shallowRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import { browserOfflineLibrary } from '../lib/offline-library.js'
 import { currentUser, ensureAuth } from '../lib/auth.js'
 import { getFigureDetails } from '../lib/figures.js'
 import { isOnline } from '../lib/online.js'
+import { sortByNewestSaved } from '../lib/sorting.js'
 
 const library = browserOfflineLibrary()
 const data = shallowRef({ owner: '', figures: [] })
 const error = shallowRef('')
 const message = shallowRef('')
 const busy = shallowRef(false)
+const savedFigures = computed(() => sortByNewestSaved(data.value.figures, 'savedAt'))
 let active = true
 const difficultyNames = { beginner: 'Base', intermediate: 'Intermedia', advanced: 'Avanzata' }
 function load() {
@@ -76,20 +78,26 @@ function clear() {
 <template>
   <main class="offline-library container">
     <h1>La mia pratica offline</h1>
-    <p>Copie testuali salvate esplicitamente su questo dispositivo. Non includono video, immagini, note private o credenziali.</p>
-    <p>Le copie possono essere obsolete. L’accesso offline non verifica la sessione o i permessi sul server; proteggi il dispositivo. Esci dall’account online per rimuoverle, oppure eliminale qui.</p>
-    <RouterLink class="btn" :to="currentUser ? '/dashboard?sezione=pratica' : '/auth'">{{ currentUser ? 'Torna alla mia pratica' : 'Accedi online' }}</RouterLink>
+    <p>Copie testuali salvate esplicitamente su questo dispositivo. Non includono video, immagini, note private o
+      credenziali.</p>
+    <p>Le copie possono essere obsolete. L’accesso offline non verifica la sessione o i permessi sul server; proteggi il
+      dispositivo. Esci dall’account online per rimuoverle, oppure eliminale qui.</p>
+    <RouterLink class="btn" :to="currentUser ? '/dashboard?sezione=pratica' : '/auth'">
+      {{ currentUser ? 'Torna alla mia pratica' : 'Accedi online' }}</RouterLink>
     <p v-if="error" role="alert">{{ error }}</p>
     <p v-if="message" role="status">{{ message }}</p>
-    <p v-if="!data.figures.length">Nessuna figura salvata. Quando sei online, apri una figura e scegli “Salva dettagli offline”.</p>
-    <article v-for="figure in data.figures" :key="figure.id" class="offline-figure">
+    <p v-if="!data.figures.length">Nessuna figura salvata. Quando sei online, apri una figura e scegli “Salva dettagli
+      offline”.</p>
+    <article v-for="figure in savedFigures" :key="figure.id" class="offline-figure">
       <h2>{{ figure.nome }}</h2>
       <p>{{ figure.danza }} · {{ difficultyNames[figure.difficulty] || 'Difficoltà non indicata' }}</p>
       <p v-if="figure.aliases?.length">Altri nomi: {{ figure.aliases.join(', ') }}</p>
       <p class="description">{{ figure.description || 'Nessuna descrizione disponibile.' }}</p>
-      <p>Copia del {{ new Date(figure.savedAt).toLocaleString('it') }}. Per dettagli aggiornati, riconnettiti e aggiorna la copia.</p>
+      <p>Copia del {{ new Date(figure.savedAt).toLocaleString('it') }}. Per dettagli aggiornati, riconnettiti e aggiorna
+        la copia.</p>
       <div class="offline-actions">
-        <button type="button" class="btn" :disabled="busy || !isOnline || currentUser?.$id !== data.owner" @click="refresh(figure)">{{ busy ? 'Aggiornamento…' : 'Aggiorna copia' }}</button>
+        <button type="button" class="btn" :disabled="busy || !isOnline || currentUser?.$id !== data.owner"
+          @click="refresh(figure)">{{ busy ? 'Aggiornamento…' : 'Aggiorna copia' }}</button>
         <button type="button" class="btn" :disabled="busy" @click="remove(figure.id)">Rimuovi copia</button>
       </div>
     </article>
@@ -98,10 +106,41 @@ function clear() {
 </template>
 
 <style scoped>
-.offline-library { display: grid; gap: 1.25rem; padding-block: 2rem; }
-h1, h2 { line-height: 1.3; overflow-wrap: anywhere; }
-p { color: var(--muted); margin: 0; overflow-wrap: anywhere; }
-.offline-figure { display: grid; gap: 1rem; padding: 1.25rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--ink-2); }
-.description { white-space: pre-wrap; color: var(--text); }
-.offline-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.offline-library {
+  display: grid;
+  gap: 1.25rem;
+  padding-block: 2rem;
+}
+
+h1,
+h2 {
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+p {
+  color: var(--muted);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.offline-figure {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--ink-2);
+}
+
+.description {
+  white-space: pre-wrap;
+  color: var(--text);
+}
+
+.offline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
 </style>

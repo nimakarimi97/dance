@@ -60,6 +60,7 @@ La registrazione via email richiede nome e cognome e li salva come nome visualiz
 Nella scheda figura: preferito, progresso, note e aggiunta alle liste. **Salva la mia pratica** conferma il salvataggio remoto, senza ottimismo fuorviante. In **Profilo → La mia pratica** si trovano preferiti, raccolte per progresso e creazione/modifica/eliminazione liste. Le figure non più disponibili restano indicate nelle liste e sono rimovibili dall'editor senza perdere le altre voci.
 
 Se il servizio non è ancora configurato, l'app mostra l'errore e permette di riprovare; non simula salvataggi locali riusciti.
+Le liste personali sono restituite dal server con le più recentemente aggiornate in cima; utenti e figure sono restituiti in ordine di ID.
 
 ## Offline e privacy
 

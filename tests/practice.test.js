@@ -80,6 +80,7 @@ test('lists prevent duplicates and allow removing unavailable figures without re
 
 test('storage boundary refuses foreign rows and grants read only to the owner, never admin labels', async () => {
   const writes = []
+  const listQueries = []
   const store = createPracticeStore({
     db: {
       async getRow({ rowId }) {
@@ -90,12 +91,18 @@ test('storage boundary refuses foreign rows and grants read only to the owner, n
       async updateRow(params) { writes.push(params); return params },
       async listRows(params) {
         assert.deepEqual(params.queries[0], ['owner', 'member'])
+        listQueries.push(params.queries)
         return { rows: [] }
       },
     },
     users: {},
     databaseId: 'dance', figuresTableId: 'figures',
-    Query: { equal: (key, value) => [key, value], limit: count => count, orderAsc: key => key },
+    Query: {
+      equal: (key, value) => [key, value],
+      limit: count => count,
+      orderAsc: key => ['asc', key],
+      orderDesc: key => ['desc', key],
+    },
     readPermission: owner => `read("user:${owner}")`,
   })
   await assert.rejects(store.save('practice_lists', 'foreign', 'member', { owner: 'member' }), { code: 403 })
@@ -103,4 +110,8 @@ test('storage boundary refuses foreign rows and grants read only to the owner, n
   await store.save('figure_practice', 'new', 'member', { owner: 'member', notes: 'private' })
   assert.deepEqual(writes[0].permissions, ['read("user:member")'])
   await store.list('figure_practice', 'member')
+  await store.list('practice_lists', 'member')
+  assert.ok(listQueries[0].some(query => JSON.stringify(query) === JSON.stringify(['asc', '$id'])))
+  assert.ok(listQueries[1].some(query => JSON.stringify(query) === JSON.stringify(['desc', '$updatedAt'])))
+  assert.ok(listQueries[1].some(query => JSON.stringify(query) === JSON.stringify(['asc', '$id'])))
 })

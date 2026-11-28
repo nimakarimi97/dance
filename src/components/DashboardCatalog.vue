@@ -22,7 +22,7 @@ const videoFilter = defineModel('videoFilter', { type: String, default: 'all' })
 const search = shallowRef('')
 const danceFilter = shallowRef('')
 const difficulty = shallowRef('')
-const sort = shallowRef('catalog')
+const sort = shallowRef('recent')
 const visibleFigures = computed(() =>
   filterCatalog(props.figures, {
     search: search.value,
@@ -54,7 +54,7 @@ function resetFilters() {
   danceFilter.value = ''
   videoFilter.value = 'all'
   difficulty.value = ''
-  sort.value = 'catalog'
+  sort.value = 'recent'
 }
 
 function trackFigureOpen(figureId) {
@@ -89,7 +89,9 @@ function confirmDelete(figure) {
         <input v-model="search" type="search" placeholder="Cerca una figura…" autocomplete="off" />
       </label>
       <details class="catalog-filter-details">
-        <summary><StudioIcon name="filters" />Filtri e ordine</summary>
+        <summary>
+          <StudioIcon name="filters" />Filtri e ordine
+        </summary>
         <div class="catalog-selects">
           <label class="video-filter">
             <span>Video</span>
@@ -171,10 +173,11 @@ function confirmDelete(figure) {
               <div class="figure-label">
                 <RouterLink :to="{ name: 'figura', params: { figura: figure.id } }" class="figure-name"
                   @click="trackFigureOpen(figure.id)">{{ figure.nome
-                }}</RouterLink>
+                  }}</RouterLink>
                 <span class="figure-styles"><span class="mobile-dance">{{ dances[figure.danza]?.nome }} · </span>{{
                   styleNames(figure) }}</span>
-                <span class="figure-styles">{{ difficultyLabels[figure.difficulty] || 'Difficoltà non indicata' }}</span>
+                <span class="figure-styles">{{ difficultyLabels[figure.difficulty] || 'Difficoltà non indicata'
+                  }}</span>
               </div>
             </div>
           </td>
@@ -264,12 +267,42 @@ function confirmDelete(figure) {
 .catalog-add:hover {
   border-color: var(--brand-text);
 }
-.catalog-create { background: var(--brand); color: var(--on-accent); border-color: transparent; }
-.catalog-filter-details { flex-basis: 100%; }
-.catalog-filter-details summary { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; width: fit-content; color: var(--studio-text); font-weight: 600; }
-.catalog-filter-details summary::after { content: '+'; margin-left: 0.5rem; }
-.catalog-filter-details[open] summary::after { content: '-'; }
-.catalog-selects { display: flex; flex-wrap: wrap; gap: 0.75rem; padding-top: 0.5rem; }
+
+.catalog-create {
+  background: var(--brand);
+  color: var(--on-accent);
+  border-color: transparent;
+}
+
+.catalog-filter-details {
+  flex-basis: 100%;
+}
+
+.catalog-filter-details summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  width: fit-content;
+  color: var(--studio-text);
+  font-weight: 600;
+}
+
+.catalog-filter-details summary::after {
+  content: '+';
+  margin-left: 0.5rem;
+}
+
+.catalog-filter-details[open] summary::after {
+  content: '-';
+}
+
+.catalog-selects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
 
 .catalog-toolbar {
   display: flex;
@@ -277,7 +310,10 @@ function confirmDelete(figure) {
   gap: 0.75rem;
   padding: 1rem 1.5rem 0;
 }
-.catalog-heading + .catalog-toolbar { padding-top: 0; }
+
+.catalog-heading+.catalog-toolbar {
+  padding-top: 0;
+}
 
 .catalog-search {
   display: flex;

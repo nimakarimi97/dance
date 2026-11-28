@@ -13,10 +13,13 @@ export function createPracticeStore({ db, users, databaseId, figuresTableId, Que
     async list(tableId, owner) {
       const rows = []
       let page
+      const ordering = tableId === 'practice_lists'
+        ? [Query.orderDesc('$updatedAt'), Query.orderAsc('$id')]
+        : [Query.orderAsc('$id')]
       do {
         page = await db.listRows({
           databaseId, tableId,
-          queries: [Query.equal('owner', owner), Query.limit(100), Query.orderAsc('$id'),
+          queries: [Query.equal('owner', owner), Query.limit(100), ...ordering,
             ...(rows.length ? [Query.cursorAfter(rows.at(-1).$id)] : [])],
         })
         rows.push(...page.rows)

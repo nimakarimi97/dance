@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { after, afterEach, mock, test } from 'node:test'
+import { Query } from 'appwrite'
 import { createServer } from 'vite'
 
 const server = await createServer({
@@ -148,6 +149,7 @@ test('figure listing paginates beyond 100 rows', async () => {
   const result = await listFigures()
   assert.equal(result.length, 101)
   assert.equal(result.at(-1).id, 'last')
+  assert.ok(list.mock.calls.every(call => call.arguments[0].queries.includes(Query.orderAsc('$id'))))
   assert.equal(list.mock.callCount(), 2)
   assert.ok(list.mock.calls[1].arguments[0].queries.some(query => query.includes('cursorAfter')))
 })

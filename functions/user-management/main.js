@@ -28,7 +28,7 @@ function createUsersApi(runtimeKey) {
     },
     getUser: userId => users.get({ userId }),
     listUsersPage: cursor => users.list({
-      queries: [Query.limit(100), ...(cursor ? [Query.cursorAfter(cursor)] : [])],
+      queries: [Query.orderAsc('$id'), Query.limit(100), ...(cursor ? [Query.cursorAfter(cursor)] : [])],
     }),
     updateLabels: (userId, labels) => users.updateLabels({ userId, labels }),
   }

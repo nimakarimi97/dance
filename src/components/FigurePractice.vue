@@ -128,8 +128,8 @@ onBeforeRouteUpdate(canLeave)
       caricamento</button>
     <form v-if="baseline" @submit.prevent="save">
       <fieldset :disabled="busy || !isOnline">
-        <button v-if="favoritesEnabled" type="button" class="favorite-choice" :class="{ saved: favorite }" :aria-pressed="favorite"
-          @click="favorite = !favorite">
+        <button v-if="favoritesEnabled" type="button" class="favorite-choice" :class="{ saved: favorite }"
+          :aria-pressed="favorite" @click="favorite = !favorite">
           <StudioIcon name="bookmark" />
           <span>{{ favorite ? 'Nei miei preferiti' : 'Aggiungi ai preferiti' }}</span>
         </button>

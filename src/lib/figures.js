@@ -15,7 +15,7 @@ export async function listFigures() {
   do {
     page = await tablesDB.listRows({
       ...table(),
-      queries: [Query.limit(100), Query.orderAsc('$sequence'), ...(rows.length ? [Query.cursorAfter(rows.at(-1).$id)] : [])],
+      queries: [Query.limit(100), Query.orderAsc('$id'), ...(rows.length ? [Query.cursorAfter(rows.at(-1).$id)] : [])],
     })
     rows.push(...page.rows)
   } while (page.rows.length === 100)
