@@ -3,6 +3,7 @@ import { gsap } from 'gsap'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { findDance, getFiguresForDance, guestPreviewActive, guestPreviewRemaining, isFigureLocked, useFigureCatalog } from '../data/danze.js'
+import { filterCatalog } from '../lib/catalog.js'
 import { currentUser } from '../lib/auth.js'
 import { ANALYTICS_EVENTS } from '../lib/analytics.js'
 import { recordAnalyticsEvent } from '../lib/figures.js'
@@ -20,22 +21,12 @@ const activeStyle = computed(() => (typeof route.query.stile === 'string' ? rout
 const searchText = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const hasFilters = computed(() => Boolean(activeStyle.value || searchText.value.trim()))
 
-function normalize(text) {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .trim()
-}
-
-const filteredFigures = computed(() => {
-  const query = normalize(searchText.value)
-  return danceFigures.value.filter((figure) => {
-    const matchesStyle = !activeStyle.value || figure.stili.includes(activeStyle.value)
-    const matchesText = !query || normalize(figure.nome).includes(query)
-    return matchesStyle && matchesText
-  })
-})
+const filteredFigures = computed(() => filterCatalog(danceFigures.value, {
+  search: searchText.value,
+  dance: props.danza,
+  style: activeStyle.value,
+  sort: 'newest',
+}))
 
 const countLabel = computed(() => {
   const n = filteredFigures.value.length

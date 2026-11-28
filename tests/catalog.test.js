@@ -22,3 +22,13 @@ test('catalog can recover the full list after filters are reset', () => {
   assert.equal(filterCatalog(figures, { search: 'no matching figure' }).length, 0)
   assert.equal(filterCatalog(figures).length, 3)
 })
+
+test('catalog sorts newest first without mutating the source list', () => {
+  const entries = [
+    { id: 'older', nome: 'Older', danza: 'salsa', stili: ['cubana'], $createdAt: '2026-01-01' },
+    { id: 'newer', nome: 'Newer', danza: 'salsa', stili: ['cubana'], $createdAt: '2026-02-01' },
+  ]
+
+  assert.deepEqual(filterCatalog(entries, { style: 'cubana', sort: 'newest' }).map(figure => figure.id), ['newer', 'older'])
+  assert.deepEqual(entries.map(figure => figure.id), ['older', 'newer'])
+})
